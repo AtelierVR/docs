@@ -2843,6 +2843,12 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthMethodPayloadDto'
       responses:
         '201':
           description: ''
@@ -2861,6 +2867,12 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthMethodPayloadDto'
       responses:
         '201':
           description: ''
@@ -2877,10 +2889,764 @@ paths:
           in: path
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthMethodPayloadDto'
       responses:
         '201':
           description: ''
       summary: Disable auth method
+      tags:
+        - Auth
+  /api/auth/passkey:
+    get:
+      description: Return the passkeys registered on the authenticated account.
+      operationId: PasskeyController_list
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiPasskeyDtoListDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '401':
+          description: Unauthorized — authentication required.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+      summary: List passkeys
+      tags:
+        - Auth
+  /api/auth/passkey/{id}:
+    patch:
+      description: Change the label of one of the authenticated account's passkeys.
+      operationId: PasskeyController_rename
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeyRenameDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiPasskeyDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '401':
+          description: Unauthorized — authentication required.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+      summary: Rename passkey
+      tags:
+        - Auth
+    delete:
+      description: >-
+        Remove one of the authenticated account's passkeys. Requires
+        verification (factor_code) because it is a security-sensitive action.
+      operationId: PasskeyController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeyDeleteDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiSuccessDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '401':
+          description: Unauthorized — authentication required.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '422':
+          description: Verification required or invalid factor code.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+      summary: Delete passkey
+      tags:
+        - Auth
+  /api/auth/passkey/register/options:
+    post:
+      description: >-
+        Return the creation options (challenge) to feed into
+        navigator.credentials.create().
+      operationId: PasskeyController_registerOptions
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiPasskeyRegistrationOptionsDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '401':
+          description: Unauthorized — authentication required.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+      summary: Start passkey registration
+      tags:
+        - Auth
+  /api/auth/passkey/register/verify:
+    post:
+      description: Verify the attestation and store the new credential.
+      operationId: PasskeyController_registerVerify
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeyRegisterVerifyDto'
+      responses:
+        '201':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiPasskeyDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '400':
+          description: Bad request — invalid parameters or body.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '401':
+          description: Unauthorized — authentication required.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '409':
+          description: This passkey is already registered.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+      summary: Finish passkey registration
+      tags:
+        - Auth
+  /api/auth/passkey/login/options:
+    post:
+      description: >-
+        Return the request options (challenge). Provide an identifier to
+        restrict the ceremony to one account, or omit it for a usernameless
+        (discoverable credential) login.
+      operationId: PasskeyController_loginOptions
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeyLoginOptionsDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiPasskeyAuthenticationOptionsDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+      summary: Start passkey login
+      tags:
+        - Auth
+  /api/auth/passkey/login/verify:
+    post:
+      description: Verify the assertion and return a session token.
+      operationId: PasskeyController_loginVerify
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeyLoginVerifyDto'
+      responses:
+        '201':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiSessionDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '400':
+          description: Bad request — invalid parameters or body.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '401':
+          description: Unauthorized — authentication required.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+      summary: Finish passkey login
+      tags:
+        - Auth
+  /api/auth/passkey/verify:
+    post:
+      description: >-
+        Run after /auth/passkey/login/options. Verifies the assertion belongs to
+        the authenticated account and returns a single-use 6-digit `factor_code`
+        to pass on the original request.
+      operationId: PasskeyController_verifyFactor
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasskeyFactorVerifyDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PasskeyFactorCodeDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+        '401':
+          description: Unauthorized — authentication required.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    type: 'null'
+                    example: null
+                    description: Always null for error responses.
+                  error:
+                    $ref: '#/components/schemas/ApiErrorDetailsDto'
+                    description: Error details object.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
+      summary: Verify a passkey assertion as a 2FA factor
       tags:
         - Auth
   /api/files/{id}:
@@ -3057,7 +3823,7 @@ paths:
                   - request
                 properties:
                   data:
-                    $ref: '#/components/schemas/ExternalServerDetailDto'
+                    $ref: '#/components/schemas/ExternalServerListItemDto'
                     description: Response payload.
                   error:
                     type: 'null'
@@ -9852,7 +10618,8 @@ paths:
     get:
       description: >-
         Return the list of public table entries for a given user (no auth
-        required).
+        required). The `filter` query is a glob-style key pattern (`*`
+        wildcard), e.g. `public.favorites.*`.
       operationId: TablesController_listUserPublic
       parameters:
         - name: id
@@ -9861,20 +10628,27 @@ paths:
           schema:
             type: string
         - name: limit
-          required: true
+          required: false
           in: query
           schema:
-            type: string
+            type: integer
+            default: 20
+            maximum: 100
         - name: offset
-          required: true
+          required: false
           in: query
           schema:
-            type: string
+            type: integer
+            default: 0
         - name: filter
-          required: true
+          required: false
           in: query
+          description: >-
+            Glob-style key pattern (`*` wildcard). `public.favorites.*` returns
+            only favorites.
           schema:
             type: string
+            maxLength: 200
       responses:
         '200':
           description: ''
@@ -12365,7 +13139,7 @@ components:
           example: John Doe
         bio:
           type: string
-          description: Biography text, or null to clear
+          description: Biography text (max 4096 characters), or null to clear
           example: Full-stack developer
           nullable: true
         pronoun:
@@ -12393,7 +13167,7 @@ components:
           items:
             $ref: '#/components/schemas/ApiLinkDto'
         tags:
-          description: Tags list (usr:* format), or null to clear
+          description: Tags list (usr:* snake_case:snake_case format), or null to clear
           example:
             - usr:developer
             - usr:gamer
@@ -12432,7 +13206,7 @@ components:
           nullable: true
         factor_code:
           type: string
-          description: TOTP 2FA code (6 digits), required for sensitive operations
+          description: Verification code (6 characters), required for sensitive operations
           example: '123456'
     ApiUserDto:
       type: object
@@ -12656,12 +13430,12 @@ components:
           type: boolean
           description: Whether this session has an active WebSocket connection
           example: true
-        public_key:
+        fingerprint:
           type: string
           description: >-
-            Ed25519 public key (base64 SPKI DER) if provided during login, or
-            null
-          example: MCowBQYDK2VwAyEA...
+            Device fingerprint (SHA-256 hex of the Ed25519 public key) if
+            provided during login, or null
+          example: a1b2c3d4e5f6...
           nullable: true
         expires_at:
           type: number
@@ -12805,7 +13579,7 @@ components:
           type: string
           example: null
           nullable: true
-          description: TOTP code for 2FA (6 digits)
+          description: Verification code for MFA (6 characters)
         public_key:
           type: string
           example: null
@@ -12823,6 +13597,218 @@ components:
           example: 1
       required:
         - target
+    AuthMethodPayloadDto:
+      type: object
+      properties:
+        email:
+          type: string
+          description: Email address (email method setup)
+          example: john@example.com
+        secret:
+          type: string
+          description: TOTP secret (base32) returned by the setup step (totp method enable)
+          example: JBSWY3DPEHPK3PXP
+        token:
+          type: string
+          description: >-
+            One-time code: TOTP code (totp method) or email link token (email
+            method)
+          example: '123456'
+        factor_code:
+          type: string
+          description: Verification code (6 characters) required to disable a method
+          example: '123456'
+    ApiPasskeyDto:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Internal passkey ID
+          example: a1b2c3d4-0000-4000-8000-000000000000
+        name:
+          type: string
+          nullable: true
+          description: User-provided label
+          example: My laptop
+        device_type:
+          type: string
+          description: Single-device or multi-device (synced) credential
+          example: multiDevice
+        backed_up:
+          type: boolean
+          description: Whether the credential is synced/backed up
+          example: true
+        discoverable:
+          type: boolean
+          description: Resident key — usable for usernameless login
+          example: true
+        transports:
+          description: Authenticator transports
+          example:
+            - internal
+            - hybrid
+          type: array
+          items:
+            type: string
+        created_at:
+          type: number
+          description: Unix timestamp (ms) of registration
+          example: 1680000000000
+        last_used_at:
+          type: number
+          nullable: true
+          description: Unix timestamp (ms) of last use
+          example: 1680000000000
+      required:
+        - id
+        - device_type
+        - backed_up
+        - discoverable
+        - transports
+        - created_at
+    ApiPasskeyDtoListDto:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 100
+          description: Total number of matching records.
+        limit:
+          type: integer
+          example: 10
+          description: Page size limit.
+        offset:
+          type: integer
+          example: 0
+          description: Page offset.
+        items:
+          description: List of items.
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiPasskeyDto'
+      required:
+        - total
+        - items
+    PasskeyRenameDto:
+      type: object
+      properties:
+        name:
+          type: string
+          example: null
+          nullable: true
+          description: New label, or null to clear it
+    PasskeyDeleteDto:
+      type: object
+      properties:
+        factor_code:
+          type: string
+          description: >-
+            Verification code (TOTP, email or passkey) proving the account owner
+            approved this removal
+          example: '482913'
+    ApiPasskeyRegistrationOptionsDto:
+      type: object
+      properties:
+        ceremony_id:
+          type: string
+          description: Opaque ceremony handle to pass back to /auth/passkey/register/verify
+        options:
+          type: object
+          additionalProperties: true
+          description: >-
+            PublicKeyCredentialCreationOptionsJSON — feed it to
+            startRegistration()
+      required:
+        - ceremony_id
+        - options
+    PasskeyRegisterVerifyDto:
+      type: object
+      properties:
+        ceremony_id:
+          type: string
+          description: Ceremony handle returned by /auth/passkey/register/options
+        name:
+          type: string
+          description: User-friendly label for the new passkey
+          example: My laptop
+        response:
+          type: object
+          description: >-
+            RegistrationResponseJSON produced by @simplewebauthn/browser
+            startRegistration()
+      required:
+        - ceremony_id
+        - response
+    ApiPasskeyAuthenticationOptionsDto:
+      type: object
+      properties:
+        ceremony_id:
+          type: string
+          description: Opaque ceremony handle to pass back to /auth/passkey/login/verify
+        options:
+          type: object
+          additionalProperties: true
+          description: >-
+            PublicKeyCredentialRequestOptionsJSON — feed it to
+            startAuthentication()
+      required:
+        - ceremony_id
+        - options
+    PasskeyLoginOptionsDto:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: >-
+            Username, email or numeric user ID. Omit to let the browser offer
+            any discoverable passkey (usernameless login).
+          example: johndoe
+    PasskeyLoginVerifyDto:
+      type: object
+      properties:
+        ceremony_id:
+          type: string
+          description: Ceremony handle returned by /auth/passkey/login/options
+        response:
+          type: object
+          description: >-
+            AuthenticationResponseJSON produced by @simplewebauthn/browser
+            startAuthentication()
+        public_key:
+          type: string
+          example: null
+          nullable: true
+          description: >-
+            Ed25519 public key (base64 SPKI DER) binding the session to a device
+            key
+      required:
+        - ceremony_id
+        - response
+    PasskeyFactorCodeDto:
+      type: object
+      properties:
+        factor_code:
+          type: string
+          description: >-
+            Single-use 6-digit code to send as `factor_code` on the original
+            request
+          example: '482913'
+      required:
+        - factor_code
+    PasskeyFactorVerifyDto:
+      type: object
+      properties:
+        ceremony_id:
+          type: string
+          description: Ceremony handle returned by /auth/passkey/login/options
+        response:
+          type: object
+          description: >-
+            AuthenticationResponseJSON produced by @simplewebauthn/browser
+            startAuthentication()
+      required:
+        - ceremony_id
+        - response
     ExternalServerListItemDto:
       type: object
       properties:
@@ -12842,8 +13828,8 @@ components:
           type: number
           description: Unix timestamp (ms) of first discovery
           example: 1680000000000
-        wellknown:
-          description: Cached well-known document, or null if unreachable
+        well_known:
+          description: Well-known document, or null if unreachable
           nullable: true
           allOf:
             - $ref: '#/components/schemas/NoxWellKnownDto'
@@ -12875,40 +13861,6 @@ components:
       required:
         - total
         - items
-    ExternalServerDetailDto:
-      type: object
-      properties:
-        address:
-          type: string
-          description: Domain address of the external server
-          example: example.com
-        rank:
-          type: number
-          description: Trust rank (higher = more trusted)
-          example: 0
-        last_seen:
-          type: number
-          description: Unix timestamp (ms) of last seen contact
-          example: 1680000000000
-        created_at:
-          type: number
-          description: Unix timestamp (ms) of first discovery
-          example: 1680000000000
-        wellknown:
-          description: Cached well-known document, or null if unreachable
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/NoxWellKnownDto'
-        well_known:
-          nullable: true
-          description: Live well-known document for this server, or null if unreachable.
-          allOf:
-            - $ref: '#/components/schemas/NoxWellKnownDto'
-      required:
-        - address
-        - rank
-        - last_seen
-        - created_at
     InstanceConfigDto:
       type: object
       properties:
@@ -12966,6 +13918,12 @@ components:
           type: array
           items:
             type: number
+        supportPasskey:
+          type: boolean
+          description: >-
+            Whether the instance supports passkey (WebAuthn) registration and
+            login
+          example: true
       required:
         - allowUserRegistration
         - allowInstanceCreation
@@ -12976,6 +13934,7 @@ components:
         - allowAvatarCreationByExternal
         - regions
         - allowedImageWidths
+        - supportPasskey
     ApiActivityEventResponseDto:
       type: object
       properties:
@@ -13837,7 +14796,9 @@ components:
         name:
           type: string
           example: my-instance
-          description: Short unique slug name [a-z0-9-_.]{3,8}. Left null if omitted.
+          description: >-
+            Short unique slug name (snake_case, 3-8 chars). Left null if
+            omitted.
         title:
           type: string
           description: Human-readable instance title
@@ -13848,8 +14809,8 @@ components:
           nullable: true
         tags:
           example:
-            - social
-            - chill
+            - usr:social
+            - usr:chill
           type: array
           items:
             type: string
@@ -13866,7 +14827,7 @@ components:
           type: boolean
           description: Whether access is restricted to the whitelist
           example: false
-        whitelist_refs:
+        whitelist:
           description: NoxIdentifier list of allowed users
           example: []
           type: array
@@ -13903,7 +14864,7 @@ components:
         tags:
           description: Updated tags list
           example:
-            - social
+            - usr:social
           type: array
           items:
             type: string
@@ -13916,7 +14877,7 @@ components:
           type: boolean
           description: Whether access is restricted to the whitelist
           example: false
-        whitelist_refs:
+        whitelist:
           description: NoxIdentifier list of allowed users
           example: []
           type: array
@@ -14171,8 +15132,8 @@ components:
           example: 42
         name:
           type: string
-          description: Short unique name [a-z0-9-_.]{3,8}. Left null if omitted.
-          example: myworld
+          description: Short unique name (snake_case, 3-8 chars). Left null if omitted.
+          example: my_world
         title:
           type: string
           description: World display name (defaults to "<display>'s World" if omitted)
@@ -14197,8 +15158,8 @@ components:
       properties:
         name:
           type: string
-          description: Short unique name [a-z0-9-_.]{3,8}, or null to clear
-          example: myworld2
+          description: Short unique name (snake_case, 3-8 chars), or null to clear
+          example: my_world
           nullable: true
         title:
           type: string
@@ -14228,7 +15189,9 @@ components:
           type: number
           example: 2
           nullable: true
-          description: Set recommended release version. null = auto (latest).
+          description: >-
+            Set recommended release version (ushort, 0–65535). null = auto
+            (latest).
         tags:
           description: User-defined tags (only usr:* tags are accepted)
           example:
@@ -14624,8 +15587,8 @@ components:
           example: 42
         name:
           type: string
-          description: Short unique name [a-z0-9-_.]{3,8}. Left null if omitted.
-          example: myavatar
+          description: Short unique name (snake_case, 3-8 chars). Left null if omitted.
+          example: my_avatar
         title:
           type: string
           description: Avatar display name
@@ -14645,8 +15608,8 @@ components:
       properties:
         name:
           type: string
-          description: Short unique name [a-z0-9-_.]{3,8}, or null to clear
-          example: my-avatar
+          description: Short unique name (snake_case, 3-8 chars), or null to clear
+          example: my_avatar
           nullable: true
         title:
           type: string
@@ -14666,7 +15629,9 @@ components:
           type: number
           example: 2
           nullable: true
-          description: Set recommended release version. null = auto (latest).
+          description: >-
+            Set recommended release version (ushort, 0–65535). null = auto
+            (latest).
         contributors:
           description: NoxIdentifier list of contributors
           example: []
