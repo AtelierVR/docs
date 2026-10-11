@@ -247,12 +247,6 @@ Poll until `status === "completed"`. Once complete the asset is available for us
     description="Register, log in, and log out. Obtain Bearer tokens."
   />
   <Card
-    icon={getIcon("face-smile")}
-    href="/api/avatars"
-    title="Avatars"
-    description="Create and manage avatars including asset uploads."
-  />
-  <Card
     icon={getIcon("at-symbol")}
     href="/api/fediverse"
     title="Fediverse"
@@ -265,10 +259,10 @@ Poll until `status === "completed"`. Once complete the asset is available for us
     description="Spin up, update, and remove running world instances."
   />
   <Card
-    icon={getIcon("arrows-right-left")}
-    href="/api/relations-(s2s)"
-    title="Relations (S2S)"
-    description="Server-to-server federation endpoints."
+    icon={getIcon("squares-2x2")}
+    href="/api/notifications"
+    title="Notifications"
+    description="Notifications endpoints."
   />
   <Card
     icon={getIcon("signal")}
@@ -301,16 +295,34 @@ Poll until `status === "completed"`. Once complete the asset is available for us
     description="Per-user key/value store for client-side persistent data."
   />
   <Card
+    icon={getIcon("squares-2x2")}
+    href="/api/tunnel"
+    title="Tunnel"
+    description="Tunnel endpoints."
+  />
+  <Card
     icon={getIcon("user-circle")}
     href="/api/users"
     title="Users"
     description="User profiles, search, follow/unfollow, thumbnail and banner management."
   />
   <Card
-    icon={getIcon("globe-alt")}
-    href="/api/worlds"
-    title="Worlds"
-    description="Create and manage virtual worlds including asset uploads."
+    icon={getIcon("squares-2x2")}
+    href="/api/avatar"
+    title="avatar"
+    description="avatar endpoints."
+  />
+  <Card
+    icon={getIcon("squares-2x2")}
+    href="/api/mod"
+    title="mod"
+    description="mod endpoints."
+  />
+  <Card
+    icon={getIcon("squares-2x2")}
+    href="/api/world"
+    title="world"
+    description="world endpoints."
   />
 </Cards>
 
