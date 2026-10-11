@@ -1,0 +1,49 @@
+---
+title: Assets
+description: Publish and consume assets (mods, worlds, avatars) through the API.
+icon: circle-stack
+---
+import { getIcon } from "@/lib/source";
+
+Every asset type (**mod**, **world**, **avatar**) runs on the same pipeline:
+
+**asset → release → file slot → bytes → status**
+
+You reserve a slot, stream the bytes into it, and Nox analyzes, validates and completes the upload
+on its own. The same routes then serve those files back to clients.
+
+| Type | Endpoint |
+|---|---|
+| `mod` | `/api/mods` |
+| `world` | `/api/worlds` |
+| `avatar` | `/api/avatars` |
+
+<Cards>
+    <Card
+        icon={getIcon("arrow-up-tray")}
+        href="/docs/upload"
+        title="Upload"
+        description="Create an asset, publish a release and upload files with integrity headers."
+    />
+    <Card
+        icon={getIcon("arrow-down-tray")}
+        href="/docs/download"
+        title="Download"
+        description="Search assets, resolve the preferred release and download file bytes."
+    />
+    <Card
+        icon={getIcon("code-bracket")}
+        href="/docs/github"
+        title="GitHub"
+        description="Mirror a GitHub repository as a read-only provider, kept in sync by webhooks."
+    />
+</Cards>
+
+## Envelope & options
+
+- Every response is wrapped: `{ data, request, time }` on success,
+  `{ data: null, error: { code, message, status }, request, time }` on error.
+- Add `?full=1` to expand `url` (`{ proxified, original }`) and the asset release preference
+  (`{ auto, value }`).
+- Uploads go through the `upload` provider (owner / contributor / admin). A repository can also be
+  served **read-only** through the `github` provider — see the GitHub page.

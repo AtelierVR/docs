@@ -1,0 +1,10 @@
+{
+    "title": "Assets",
+    "icon": "cube",
+    "pages": [
+        "index",
+        "upload",
+        "download",
+        "github"
+    ]
+}

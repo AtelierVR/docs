@@ -1,0 +1,141 @@
+---
+title: Download
+description: Search assets, resolve the preferred release, and download file bytes.
+icon: arrow-down-tray
+---
+
+Read endpoints are **public** (no token needed) and work the same for uploaded assets and for
+read-only providers such as `github`.
+
+## 1. Find the asset
+
+```bash
+# Search
+curl "$NOX/$EP?query=my-mod&limit=10&offset=0"
+
+# One asset (with the expanded release preference)
+curl "$NOX/$EP/42?full=1"
+```
+
+By default the search only returns the assets that own **at least one completed release**, so an
+asset that was created but never uploaded stays out of the results. On top of `query`, `limit`
+and `offset`, every listing takes the same cumulative `status` filter (see §5).
+
+With `?full=1`, the asset exposes its preferred release as `{ auto, value }`:
+
+```json
+{ "release": { "auto": true, "value": 7 } }
+```
+
+`value` is the release id clients should use — the pinned one, or the latest while `auto` is true.
+Without `?full=1`, `release` is a bare id.
+
+## 2. List the releases
+
+```bash
+curl "$NOX/$EP/42/releases?limit=20&offset=0"
+
+# One release: by name or by id
+curl "$NOX/$EP/42/releases/v1.0.0"
+curl "$NOX/$EP/42/releases/7"
+```
+
+A release does **not** embed its files — a release may hold a huge number of them, so they are only
+served page by page (see below). While the release has no completed file it is `awaiting` and
+carries `expires_at` / `refetch_at`.
+
+Only the **completed** releases are listed: a release that is still being uploaded (and an asset
+with no release at all) is hidden until it holds a completed file. Add `?status=awaiting` (or
+`?status=all`) to see them — see §5.
+
+## 3. List the files of a release
+
+```bash
+curl "$NOX/$EP/42/releases/v1.0.0/files?limit=20&offset=0"
+```
+
+```json
+{
+  "query": null,
+  "limit": 20,
+  "offset": 0,
+  "total": 3,
+  "items": [
+    { "name": "my-mod-windows.zip", "url": "…", "mime": "application/zip", "size": 88941 }
+  ]
+}
+```
+
+| Parameter | Effect |
+|---|---|
+| `query` | matches the file `name` or `mime` |
+| `limit` / `offset` | page size (`1`–`100`, default `20`) and start index |
+| `full` | expands the file objects (download URL) |
+| `status` | cumulative status filter, `all` for everything (see §5) |
+| `platform=windows`, `engine=unity:6000.5`, … | attribute filters — repeated values are OR-ed, distinct filters AND-ed |
+| `attribute=key:value` | same filter, explicit form for keys colliding with the ones above |
+
+`{version}` accepts the release name **or** its numeric id, and `total` is the full match count —
+useful to drive a pager.
+
+Only the **completed** files are listed, so a slot that is still awaiting its bytes or being
+validated is not part of the page. Use the status filter below to inspect them.
+
+## 4. Download the bytes
+
+```bash
+curl -L "$NOX/$EP/42/releases/v1.0.0/files/my-mod-windows.zip" -o my-mod.zip
+```
+
+This route **redirects** (`302`) to the storage URL — hence `-L`. `{version}` accepts the release
+id or name, and `{fileRef}` accepts the file **name** or its numeric **id** (the one at the end of
+the upload URL).
+
+<Callout type="info">
+The same URL is also exposed as `url` on every file object: it is the **download** URL once the
+upload is `completed`, and the **upload** URL while the slot is still `awaiting` or `queued`.
+</Callout>
+
+A slot reserved **without** a name still gets one when the bytes are sent (`Content-Disposition`,
+`filename="…"`); and either way it stays reachable through its numeric `fileId`.
+
+<Callout type="info">
+While a slot is still `awaiting`, `queued` or `processing` it is not downloadable yet: the
+download URL only becomes valid once the upload is `completed`. Following that upload — the
+status route and `refetch_at` — is covered in [Upload](/docs/assets/upload).
+</Callout>
+
+## 5. Status filter
+
+Every listing accepts `status` — **cumulative**, and `all` for everything. Without it, only the
+completed resources are returned.
+
+```bash
+# the default: completed only
+curl "$NOX/$EP/42/releases"
+
+# the releases still being uploaded
+curl "$NOX/$EP/42/releases?status=awaiting"
+
+# cumulative: awaiting or processing
+curl "$NOX/$EP/42/releases?status=awaiting&status=processing"
+
+# absolutely everything, pending and failed included
+curl "$NOX/$EP/42/releases?status=all"
+
+# the files of a release, failures included
+curl "$NOX/$EP/42/releases/7/files?status=failed&status=completed"
+```
+
+| Value | Meaning |
+|---|---|
+| `completed` | the default — the resource can be consumed |
+| `awaiting` | a slot/release waiting for its bytes (an asset with no release counts as `awaiting`) |
+| `queued` | bytes received, validation not started |
+| `processing` | the bundle analysis is running |
+| `failed` | the upload was rejected |
+| `all` | every status at once |
+
+An unknown value answers `400`, so a typo never silently looks like an empty listing. Under the
+`github` provider everything is published content: a filter excluding `completed` returns nothing
+there.

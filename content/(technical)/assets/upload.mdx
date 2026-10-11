@@ -1,0 +1,230 @@
+---
+title: Upload
+description: Create an asset, publish a release, and upload its files through the API.
+icon: arrow-up-tray
+---
+import { Steps, Step } from "fumadocs-ui/components/steps";
+
+Four requests take a file from your machine to a published release:
+
+**asset → release → slot → bytes → validation**
+
+You reserve a *slot* first, then stream the bytes into it. The `PUT` only receives and verifies the
+bytes: it answers `queued` (waiting for the validation) immediately and the bundle analysis runs out
+of band (`processing`). Poll the file until it settles on `completed` — or `failed`.
+
+<Callout type="info">
+Every request needs `Authorization: Bearer $NOX_TOKEN`. Creating the asset also requires the
+`can_file_upload` permission; the release, the slot and the upload require being the asset
+**owner**, a **contributor** or an **admin**.
+</Callout>
+
+In the examples, `$NOX` is the API base URL (e.g. `https://example.com/api`), `$EP` the endpoint
+(`mods`, `worlds`, `avatars`) and `$TOKEN` your session token.
+
+---
+
+<Steps>
+
+<Step>
+### Create the asset
+
+```bash
+curl -X PUT "$NOX/$EP" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "my-mod",
+    "title": "My Mod",
+    "description": "A cool mod",
+    "tags": ["usr:cool"]
+  }'
+```
+
+```json
+{ "id": 42, "name": "my-mod", "title": "My Mod", "release": -1 }
+```
+
+- `id` and `name` are optional; without a `name` the asset is only addressable by id.
+- `name` must match `^[a-zA-Z0-9][a-zA-Z0-9._-]*$` (max 64 chars) to stay URL-safe.
+- `release: -1` means no release exists yet.
+</Step>
+
+<Step>
+### Create a release
+
+```bash
+curl -X PUT "$NOX/$EP/42/releases" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "v1.0.0", "title": "Initial release", "channel": "stable" }'
+```
+
+```json
+{ "id": 7, "name": "v1.0.0", "status": { "status": "awaiting" }, "expires_at": 1789340000000 }
+```
+
+`name` is the version slug (unique within the asset); `channel` is `stable`, `candidate` or
+`nightly`. A release with no completed file is `awaiting` and carries an `expires_at`.
+</Step>
+
+<Step>
+### Reserve a file slot
+
+Nothing is uploaded yet — this returns the **upload URL**.
+
+```bash
+curl -X POST "$NOX/$EP/42/releases/7/files" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "my-mod-windows.zip",
+    "mime": "application/octet-stream",
+    "attributes": [
+      { "key": "platform", "value": "windows" },
+      { "key": "arch", "value": "x86_64" },
+      { "key": "engine", "value": "unity:6000.4" }
+    ]
+  }'
+```
+
+```json
+{
+  "name": "my-mod-windows.zip",
+  "url": "https://example.com/api/mods/42/releases/7/files/101",
+  "status": { "status": "awaiting" },
+  "attributes": [{ "key": "platform", "value": "windows" }]
+}
+```
+
+The numeric id at the end of `url` is the `fileId`. `name` and `mime` are optional — they can come
+from the upload headers instead. Repeat this step **once per variant** (windows, linux…).
+</Step>
+
+<Step>
+### Send the bytes
+
+`PUT` the raw file into the slot (same `Authorization`, no token in the URL):
+
+```bash
+BIN=./my-mod-windows.zip
+HASH="sha256:$(sha256sum "$BIN" | cut -d' ' -f1)"
+
+curl -X PUT "$NOX/$EP/42/releases/7/files/101" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/octet-stream" \
+  -H "Content-Hash: $HASH" \
+  -H "Content-Length: $(stat -c%s "$BIN")" \
+  -H 'Content-Disposition: attachment; filename="my-mod-windows.zip"' \
+  -H "Content-Signature: ed25519:MEQCIG9X…" \
+  --data-binary @"$BIN"
+```
+
+| Header | Effect |
+|---|---|
+| `Content-Type` | Effective MIME (beats the slot `mime`). |
+| `Content-Hash` | `sha256:<hex>`; a mismatch → `400` and the slot becomes `failed`. |
+| `Content-Length` | Body size; a mismatch → `400`. |
+| `Content-Disposition` | `filename` used when the slot has no name. |
+| `Content-Signature` | Detached signature, recorded as-is. |
+
+All headers are optional, but the integrity ones are recommended. The request ends as soon as the
+bytes are stored — the analysis happens afterwards:
+
+```json
+{
+  "name": "my-mod-windows.zip",
+  "url": "https://example.com/api/mods/42/releases/7/files/101",
+  "status": { "status": "queued", "progress": null, "message": "Waiting for the bundle analysis" },
+  "size": 12345678,
+  "mime": "application/octet-stream",
+  "hashs": ["sha256:…"],
+  "refetch_at": 1791670265000
+}
+```
+
+`size`, `mime` and `hashs` already describe the received bytes, `url` still points at the upload
+URL, and `refetch_at` tells you when to look again. There is **no `expires_at`** any more: only an
+`awaiting` slot (nothing received yet) or a `failed` one keeps a deadline.
+
+The only failure raised by the `PUT` itself is an integrity mismatch (`Content-Hash` /
+`Content-Length`) → `400` and the slot is marked `failed`.
+</Step>
+
+<Step>
+### Wait for the analysis
+
+The slot goes `awaiting` (no bytes) → `queued` (waiting for the validation) → `processing` →
+`completed` (or `failed`). Poll the status route while the payload exposes `refetch_at`:
+
+```bash
+until [ -z "$(curl -sS "$NOX/$EP/42/releases/7/files/101/status" \
+  -H "Authorization: Bearer $TOKEN" | jq -r '.data.refetch_at')" ]; do
+  sleep 2
+done
+```
+
+While it runs, `status.status` is `processing` and `progress` advances **live**: it is either the
+steps counted by the analyzer (`{ current, total }`) or `null` while they cannot be estimated —
+enough to drive a progress bar.
+
+| When | `progress` | `message` |
+|---|---|---|
+| right after the `PUT` | `null` | `Analyzing the uploaded bundle` |
+| the analyzer started | `null` | `Loading bundle` |
+| scanning the bundle | `{ current: 45, total: 227 }` | `Scanning 227 objects` |
+| scan finished | `{ current: 227, total: 227 }` | `Bundle analyzed` |
+
+```jsonc
+// GET …/files/101/status — while the analysis runs
+{ "status": { "status": "processing", "progress": { "current": 45, "total": 227 }, "message": "Scanning 227 objects" } }
+```
+
+Once `refetch_at` is gone the file is stable: `status` collapses to the plain string `"completed"`
+and `url` has switched to the download URL.
+
+```json
+{
+  "name": "my-mod-windows.zip",
+  "url": "https://example.com/api/files/<key>",
+  "status": "completed",
+  "analysis": { "engine": "unity", "platform": "windows", "descriptors": 1 }
+}
+```
+
+A `failed` file is stable too (it stops asking for a refetch) and carries the reason in
+`status.message`: re-`PUT` the same `fileId` to retry it until its `expires_at` is reached.
+</Step>
+
+</Steps>
+
+---
+
+## Lifecycle
+
+| Object | Status | Expires? | When |
+|---|---|---|---|
+| file | `awaiting` | yes | slot reserved, the bytes have not been received yet |
+| file | `queued` | no | bytes received, waiting for the background validation |
+| file | `processing` | no | the uploaded bundle is being analyzed |
+| file | `completed` | no | analysis done, the bytes are stored (download URL available) |
+| file | `failed` | yes | integrity or validation failure, retryable until `expires_at` |
+| release | `awaiting` | yes | created, no completed file |
+| release | `completed` | no | first file uploaded (the deadline is removed) |
+
+Only those two states carry an **`expires_at`**: `awaiting` (nothing received yet) and `failed`
+(the retry window). A `queued`, `processing` or `completed` resource has no deadline.
+
+## Good to know
+
+- **Files are immutable** — created or deleted, never updated.
+- **Attributes** are free-form (`{ key, value }[]`, not Nox tags); for `avatar`/`world`,
+  `platform` and `engine` (`"<engine>[:<version>]"`) are required by the type validator.
+- **Metadata** is editable with `PATCH /$EP/{id}` (asset) and `PATCH /$EP/{id}/releases/{version}`
+  (release). Deleting cascades down to files and images.
+- **Pending resources are hidden from the listings**: `GET /$EP`, `…/releases` and
+  `…/releases/{version}/files` only return what is `completed`, so an upload becomes visible to
+  clients exactly when its analysis succeeds. To inspect a run in progress, use the status route
+  above, or add `?status=awaiting`, `?status=all`… to the listing.
+
+See the generated **API reference** for every field and status code.
