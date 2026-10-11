@@ -1,0 +1,46 @@
+---
+title: Core APIs
+description: Core Modding APIs reference
+---
+import { getIcon } from "@/lib/source";
+
+The core APIs provide the fundamental building blocks for Nox mods. They are accessible in any mod via the `api` object injected by the Nox runtime.
+
+<Cards>
+    <Card
+        icon={getIcon("cube")}
+        href="/docs/technical/cores/modapi"
+        title="Mod API"
+        description="Accessible via api.ModAPI. Query, load, unload, and reload mods at runtime. Manage dependencies declared in nox.mod.json."
+    />
+    <Card
+        icon={getIcon("bolt")}
+        href="/docs/technical/cores/eventapi"
+        title="Event API"
+        description="Accessible via api.EventAPI. Publish/subscribe event bus for cross-mod communication. Emit and listen to typed events."
+    />
+    <Card
+        icon={getIcon("folder")}
+        href="/docs/technical/cores/assetapi"
+        title="Asset API"
+        description="Accessible via api.AssetAPI. Load Unity assets, prefabs, scenes, and AssetBundles from your mod's Assets/ folder at runtime."
+    />
+    <Card
+        icon={getIcon("bookmark")}
+        href="/docs/technical/cores/configapi"
+        title="Config API"
+        description="Accessible via api.ConfigAPI. Persistent per-mod configuration storage with dot-path access. Auto-creates a dedicated folder for your mod."
+    />
+    <Card
+        icon={getIcon("cog")}
+        href="/docs/technical/cores/libapi"
+        title="Lib API"
+        description="Accessible via api.LibAPI. Load and manage native libraries (.dll, .so, .dylib) from your mod's Plugins/ folder."
+    />
+    <Card
+        icon={getIcon("document-text")}
+        href="/docs/technical/cores/loggerapi"
+        title="Logger API"
+        description="Accessible via api.LoggerAPI. Structured logging with levels (info, warn, error), tags, and Unity object context."
+    />
+</Cards>
