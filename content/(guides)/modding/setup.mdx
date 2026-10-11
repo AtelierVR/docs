@@ -1,0 +1,338 @@
+---
+title: Setup
+description: Set up the project structure for a new Nox mod.
+---
+import { Steps, Step } from "fumadocs-ui/components/steps";
+
+This guide walks you through creating a Nox mod from scratch, covering every file and folder you need.
+
+## Project Structure
+
+A Nox mod follows a standard layout with three layers:
+
+```
+my-mod/
+├── .github/workflows/  # CI pipeline
+├── .gitattributes      # Git LFS + merge config
+├── .gitignore          # Ignore Unity temp files
+├── Assets/             # Unity assets (UI, textures, etc.)
+├── CCK/                # Simple implementations of SDK interfaces
+├── Runtime/            # Mod logic
+├── SDK/                # Interfaces and enums only
+├── nox.mod.json        # Mod manifest
+├── package.json        # Unity package descriptor
+├── LICENSE
+└── README.md
+```
+
+> **Why three layers?** **SDK** contains only interfaces and enums — no logic. **CCK** is a simple implementation of those interfaces. **Runtime** holds the actual mod logic and the entry point. If your mod is small, you can merge CCK and Runtime.
+
+---
+
+<Steps>
+
+<Step>
+### `nox.mod.json`
+
+The mod manifest tells Nox everything about your mod. Create it at the root of your mod folder.
+Here is the **minimum** required:
+
+```json
+{
+  "type": "mod",
+  "id": "my.super.mod",
+  "name": "My Super Mod",
+  "version": "1.0.x",
+  "description": "A short description of your mod.",
+  "entrypoints": {
+    "main": [
+      "My.Super.Mod.Runtime.Main"
+    ]
+  },
+  "relations": [
+    {
+      "id": "nox.cck",
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.cck.git"
+    }
+  ]
+}
+```
+
+<Callout type="info">
+    You can also add **optional** fields: `provides` (alternative IDs), `contact`, `authors`, `license`, `icon`.
+</Callout>
+
+#### `relations` system
+
+| Field | Description |
+|---|---|
+| `id` | Dependency identifier. |
+| `type` | `depends`, `conflicts`, or `recommends`. |
+| `version` | Semver range (e.g., `>=1.0.0`). Only `>=` is supported. |
+| `register` | Where to fetch the dependency. |
+
+Three `register` schemes:
+
+| Scheme | Example |
+|---|---|
+| `git+` | `git+https://github.com/owner/repo.git` |
+| `upm+` | `upm+com.unity.textmeshpro@3.0.6` |
+| `npm+` | `npm+my-package@1.2.3` |
+
+</Step>
+
+<Step>
+### Entry points (`Runtime/Main.cs`)
+
+The entry point is a C# class that implements one of the initializer interfaces. Its fully-qualified name must match `entrypoints` in `nox.mod.json`.
+
+```csharp title="Runtime/Main.cs"
+using Nox.CCK.Mods.Cores;
+using Nox.CCK.Mods.Initializers;
+
+namespace My.Super.Mod.Runtime {
+    public class Main : IMainModInitializer {
+        private IModCoreAPI coreAPI;
+
+        public void OnInitialize(IModCoreAPI api) {
+            coreAPI = api;
+            // Register your mod's services here
+        }
+
+        public void OnDispose() {
+            // Clean up
+            coreAPI = null;
+        }
+    }
+}
+```
+
+<Callout type="info">
+    All lifecycle methods have **default implementations**. You only override what you need.  
+    See the **[Features guide](/docs/guides/modding/features)** for the full lifecycle API.
+</Callout>
+
+#### Which initializer?
+
+Map each `entrypoints` key to its initializer interface:
+
+| Key | Interface | When it's called |
+|---|---|---|
+| `main` | `IMainModInitializer` | Runs always. |
+| `client` | `IClientModInitializer` | Runs in Play mode. |
+| `editor` | `IEditorModInitializer` | Runs inside Unity Editor. |
+
+You can implement **multiple** interfaces in the same class if your mod needs to run in several contexts.
+
+</Step>
+
+<Step>
+### Assembly Definitions (`.asmdef`)
+
+Each layer needs its own `.asmdef` so Unity compiles them separately with controlled dependencies.
+
+**SDK layer** — only interfaces and enums, no logic:
+
+```json title="SDK/My.Super.Mod.asmdef"
+{
+    "name": "My.Super.Mod",
+    "rootNamespace": "My.Super.Mod",
+    "references": [
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "autoReferenced": true
+}
+```
+
+**CCK layer** — simple implementation of the SDK interfaces:
+
+```json title="CCK/My.Super.Mod.CCK.asmdef"
+{
+    "name": "My.Super.Mod.CCK",
+    "rootNamespace": "My.Super.Mod.CCK",
+    "references": [
+        "Nox.CCK",
+        "UniTask",
+        "My.Super.Mod"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "autoReferenced": true
+}
+```
+
+**Runtime layer** — the actual mod logic, contains `Main`:
+
+```json title="Runtime/My.Super.Mod.Runtime.asmdef"
+{
+    "name": "My.Super.Mod.Runtime",
+    "rootNamespace": "My.Super.Mod.Runtime",
+    "references": [
+        "Nox.CCK",
+        "UniTask",
+        "My.Super.Mod",
+        "My.Super.Mod.CCK"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "autoReferenced": true
+}
+```
+
+
+
+<Callout type="info">
+    For small mods, you can use a single `.asmdef` at the root. The three-layer split is a convention, not a requirement.
+</Callout>
+
+</Step>
+
+<Step>
+### `package.json`
+
+Standard Unity package descriptor. Kept minimal:
+
+```json
+{
+    "name": "my.super.mod",
+    "displayName": "My Super Mod",
+    "version": "1.0.0",
+    "description": "A short description of your mod."
+}
+```
+
+</Step>
+
+<Step>
+### `.gitattributes`
+
+Ensures Unity YAML files merge correctly and binary assets use Git LFS:
+
+```ini title=".gitattributes"
+* text=auto
+
+# Unity YAML merge
+*.meta -text merge=unityyamlmerge diff
+*.unity -text merge=unityyamlmerge diff
+*.asset -text merge=unityyamlmerge diff
+*.prefab -text merge=unityyamlmerge diff
+*.mat -text merge=unityyamlmerge diff
+*.anim -text merge=unityyamlmerge diff
+*.controller -text merge=unityyamlmerge diff
+
+# Images — Git LFS
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.psd filter=lfs diff=lfs merge=lfs -text
+*.tga filter=lfs diff=lfs merge=lfs -text
+
+# Audio — Git LFS
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.ogg filter=lfs diff=lfs merge=lfs -text
+*.wav filter=lfs diff=lfs merge=lfs -text
+
+# Video — Git LFS
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
+
+# 3D — Git LFS
+*.fbx filter=lfs diff=lfs merge=lfs -text
+*.blend filter=lfs diff=lfs merge=lfs -text
+*.obj filter=lfs diff=lfs merge=lfs -text
+
+# Build artifacts — Git LFS
+*.dll filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+```
+
+</Step>
+
+<Step>
+### `.gitignore`
+
+Prevents Unity temp/generated files from being committed:
+
+```ini title=".gitignore"
+# Unity generated
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+# IDE
+.vs/
+.idea/
+*.csproj
+*.sln
+
+# Nox-specific
+PackageExports/
+_*
+
+# Build artifacts
+*.apk
+*.unitypackage
+
+# Sensitive
+.env
+.env*
+```
+
+<Callout type="warn">
+    The `_*` rule ignores any folder starting with `_`, useful for local test assets you don't want to commit.
+</Callout>
+
+</Step>
+
+<Step>
+### `Assets/` folder
+
+Place your Unity assets here: UI documents (`.uxml`), language packs (`.asset`), textures, prefabs, etc.
+
+Organize them in subfolders by feature:
+
+```
+Assets/
+└── mymod/
+    ├── my-ui.uxml
+    ├── langpack.asset
+    └── icon.png
+```
+
+</Step>
+
+<Step>
+### `LICENSE`
+
+Add an open-source license file. Nox mods typically use `GPL-3.0`, `MIT`, or `Apache-2.0`.
+
+</Step>
+
+</Steps>
+
+## Quick Checklist
+
+- [ ] `nox.mod.json` with unique `id`, `entrypoints`, and `relations`
+- [ ] `Runtime/Main.cs` implementing at least one initializer
+- [ ] `.asmdef` files for each layer (`SDK/`, `CCK/`, `Runtime/`)
+- [ ] `package.json` (minimal)
+- [ ] `.gitattributes` (LFS + merge)
+- [ ] `.gitignore` (Unity + Nox conventions)
+- [ ] `Assets/` folder with your mod's content
+- [ ] `LICENSE`
+- [ ] `.github/workflows/build.yml` (see [Publishing](/docs/guides/modding/publishing))
+
+Once your scaffolding is ready, continue to **[Implementing Features](/docs/guides/modding/features)**.

@@ -1,0 +1,151 @@
+---
+title: Asset API
+description: Load assets and worlds from your mod's Assets/ folder at runtime.
+icon: folder
+---
+
+The `IAssetAPI` loads Unity assets and scenes from your mod. Access it via `api.AssetAPI`.
+
+## How It Works
+
+Each mod has its own `Assets/` folder that gets bundled into an **AssetBundle** during the [build](/docs/guides/modding/building) step. At runtime, the Asset API loads from this bundle.
+
+```
+my.super.mod/
+├── Assets/
+│   ├── prefabs/
+│   │   └── button.prefab       → "prefabs/button.prefab"
+│   ├── textures/
+│   │   └── icon.png            → "textures/icon.png"
+│   └── scenes/
+│       └── lobby.unity         → "scenes/lobby.unity"
+├── nox.mod.json
+└── ...
+```
+
+The path is relative to your `Assets/` folder — include the extension, omit the `Assets/` prefix.
+
+When building, all assets in `Assets/` are packed into a single bundle named after your mod ID. At runtime, the Asset API resolves the `mod_id:` prefix to find the right bundle, then loads the asset by path.
+
+<Callout type="info">
+    Assets from other mods are only accessible if that mod is declared in your `relations`.  
+    Use `GetInternalAsset` for your own assets (faster, no cross-mod lookup).
+</Callout>
+
+## Asset Loading
+
+All paths use `ResourceIdentifier` with the format `"mod_id:path"`.
+
+### Path resolution
+
+| Format | Example | Resolves to |
+|---|---|---|
+| `"mod_id:path"` | `"nox.audio:ui/volume.uxml"` | Asset from `nox.audio` |
+| `"provided_id:path"` | `"audio:ui/volume.uxml"` | Uses `provides` alias from `nox.mod.json` |
+| `"path"` | `"ui/button.prefab"` | Defaults to your own mod's ID |
+
+<Callout type="info">
+    Omitting the `mod_id:` prefix implicitly uses your local mod ID.  
+    Any `provides` alias from `nox.mod.json` also works as the prefix.
+</Callout>
+
+### Synchronous
+
+```csharp
+// Your own assets — omit mod_id
+if (api.AssetAPI.HasAsset<GameObject>("prefabs/button.prefab"))
+{
+    var prefab = api.AssetAPI.GetAsset<GameObject>("prefabs/button.prefab");
+}
+
+// Another mod's assets — use full mod_id
+var icon = api.AssetAPI.GetAsset<Texture2D>("nox.audio:ui/icon.png");
+```
+
+### Asynchronous
+
+```csharp
+// Your own assets
+if (await api.AssetAPI.HasAssetAsync<Texture2D>("textures/banner.png"))
+{
+    var tex = await api.AssetAPI.GetAssetAsync<Texture2D>("textures/banner.png");
+}
+```
+
+---
+
+## Internal vs External Assets
+
+| Method | Scope |
+|---|---|
+| `GetAsset` / `HasAsset` | All mods (your own + others). |
+| `GetInternalAsset` / `HasInternalAsset` | Your mod only (faster, no cross-mod lookup). |
+
+Prefer `Internal` variants when loading your own assets.
+
+## Symbolic Assets
+
+A `SymbolicAsset` is a **symlink** to another mod's asset. Use it to reference an asset without duplicating it in your mod.
+
+Right-click in your `Assets/` folder → **Create** → **Nox** → **SymbolicAsset**. Set the `Target` to a full resource path:
+
+```
+my.super.mod/
+└── Assets/
+    └── icons/
+        └── avatar.asset    ← SymbolicAsset, target: "nox.avatars:ui/icons/default.png"
+```
+
+When you call `GetAsset<Texture2D>("icons/avatar.asset")`, the system transparently redirects to `nox.avatars:ui/icons/default.png`.
+
+```csharp
+// Loads from nox.avatars, not from your own bundle
+var tex = api.AssetAPI.GetAsset<Texture2D>("icons/avatar.asset");
+```
+
+<Callout type="info">
+    Symbolic assets are resolved transparently — callers don't need to know the real source.  
+    The target mod must be declared in your `relations`.
+</Callout>
+
+---
+
+## World / Scene Loading
+
+Load entire Unity scenes from any mod:
+
+```csharp
+// Synchronous check
+if (api.AssetAPI.HasWorld("my.super.mod:scenes/lobby.unity"))
+{
+    var scene = api.AssetAPI.GetWorld("my.super.mod:scenes/lobby.unity");
+}
+
+// Async load (additive or single)
+var scene = await api.AssetAPI.LoadWorld(
+    "my.super.mod:scenes/lobby.unity",
+    LoadSceneMode.Additive
+);
+
+// Unload when done
+await api.AssetAPI.UnloadWorld("my.super.mod:scenes/lobby.unity");
+```
+
+---
+
+## Full API Reference
+
+| Method | Description |
+|---|---|
+| `HasAsset<T>(path)` | Synchronous existence check. |
+| `GetAsset<T>(path)` | Synchronous load (any mod). |
+| `HasInternalAsset<T>(path)` | Sync check (your mod only). |
+| `GetInternalAsset<T>(path)` | Sync load (your mod only). |
+| `HasAssetAsync<T>(path)` | Async existence check. |
+| `GetAssetAsync<T>(path)` | Async load. |
+| `HasWorld(path)` | Check if a world exists. |
+| `IsLoadedWorld(path)` | Check if a world is loaded. |
+| `GetWorld(path)` | Synchronous world access. |
+| `LoadWorld(path, mode)` | Async world load. |
+| `UnloadWorld(path)` | Async world unload. |
+| *Internal counterparts* | Same methods with `Internal` prefix. |

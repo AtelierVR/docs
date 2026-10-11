@@ -1,0 +1,100 @@
+---
+title: Creating a Command
+description: Add custom commands to the terminal
+---
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+<Steps>
+  <Step>
+    ### Edit `nox.mod.json`
+
+    ```json
+    {
+      "type": "mod",
+      "id": "my.mod",
+      "version": "1.0.0",
+      "relations": [
+        {
+          "id": "terminal",
+          "type": "depends",
+          "version": ">=1.0.0",
+          "register": "git+https://github.com/AtelierVR/nox.terminal.git"
+        }
+      ],
+      "constraints": [
+        { "type": "after", "id": "terminal" }
+      ]
+    }
+    ```
+  </Step>
+  <Step>
+    ### Create the `.asmdef`
+
+    ```json
+    {
+      "name": "My.Mod",
+      "references": [
+        "Nox.Terminal"
+      ]
+    }
+    ```
+  </Step>
+  <Step>
+    ### Implement
+
+    ```csharp
+    using Nox.CCK.Utils;
+    using Nox.Terminal;
+
+    public class HelloCommand : ICommand, IHelper {
+        public string GetName() => "hello";
+        public string GetShort() => "Print a greeting";
+        public string GetUsage() => "hello [--name name] [--loud]";
+
+        public async UniTask<bool> Execute(string input, IContext ctx) {
+            if (!input.StartsWith("hello "))
+                return UniTask.FromResult(false);
+
+            var args = ArgsParser.Parse(input.Substring(6));
+            var msg = $"Hello, {args.Get("name", "World")}!";
+            ctx.PrintLn(args.GetBool("loud") ? msg.ToUpper() : msg);
+            return UniTask.FromResult(true);
+        }
+
+        public string[] AutoComplete(string input, IContext ctx) =>
+            input.StartsWith("hello ")
+                ? new[] { "hello --name World", "hello --loud" }
+                : new[] { "hello" };
+    }
+    ```
+  </Step>
+  <Step>
+    ### Register
+
+    ```csharp
+    public class Main : IMainModInitializer {
+        public static Main Instance;
+        public IMainModCoreAPI CoreAPI;
+
+        public static ITerminalAPI TerminalAPI =>
+            Instance.CoreAPI.ModAPI
+                .GetMod("terminal")
+                ?.GetInstance<ITerminalAPI>();
+
+        private uint _id;
+
+        public void OnInitializeMain(IMainModCoreAPI api) {
+            Instance = this;
+            CoreAPI = api;
+            _id = TerminalAPI.Register(new HelloCommand());
+        }
+
+        public void OnDisposeMain() {
+            TerminalAPI?.Unregister(_id);
+            Instance = null;
+            CoreAPI = null;
+        }
+    }
+    ```
+  </Step>
+</Steps>

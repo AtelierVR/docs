@@ -1,0 +1,21 @@
+{
+    "pages": [
+        "setup",
+        "features",
+        "building",
+        "publishing",
+        "---Core APIs---",
+        "modapi",
+        "eventapi",
+        "assetapi",
+        "configapi",
+        "libapi",
+        "loggerapi",
+        "---Feature APIs---",
+        "control",
+        "settings",
+        "terminal",
+        "audio",
+        "keybinding"
+    ]
+}

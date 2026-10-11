@@ -1,0 +1,93 @@
+---
+title: Creating a Keybinding
+description: Register input bindings with typed callbacks
+---
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+<Steps>
+  <Step>
+    ### Edit `nox.mod.json`
+
+    ```json
+    {
+      "type": "mod",
+      "id": "my.mod",
+      "version": "1.0.0",
+      "relations": [
+        {
+          "id": "keybinding",
+          "type": "depends",
+          "version": ">=1.0.0",
+          "register": "git+https://github.com/AtelierVR/nox.keybinding.git"
+        }
+      ],
+      "constraints": [
+        { "type": "after", "id": "keybinding" }
+      ]
+    }
+    ```
+  </Step>
+  <Step>
+    ### Create the `.asmdef`
+
+    ```json
+    {
+      "name": "My.Mod",
+      "references": [
+        "Nox.KeyBinding"
+      ]
+    }
+    ```
+  </Step>
+  <Step>
+    ### Register
+
+    ```csharp
+    using Nox.KeyBindings;
+
+    public class Main : IMainModInitializer {
+        private IKeyBinding _jump;
+        private float _jumpValue;
+
+        public void OnInitializeMain(IMainModCoreAPI api) {
+            Instance = this;
+            CoreAPI = api;
+            var kb = api.ModAPI
+                .GetMod("keybinding")
+                ?.GetInstance<IKeyBindingManager>();
+            _jump = kb.AddKeyBinding("jump", "<Keyboard>/space", "movement");
+            _jump.AddListener<float>(v =>
+                _jumpValue = v);
+        }
+
+        public void OnDisposeMain() {
+            _jump?.RemoveListener<float>(v =>
+                _jumpValue = v);
+            Instance = null;
+            CoreAPI = null;
+        }
+    }
+    ```
+  </Step>
+</Steps>
+
+## IKeyBindingManager
+
+```csharp
+IKeyBinding AddKeyBinding(string id, string binding, string category = null);
+IKeyBinding GetKeyBinding(string id, string category = null);
+bool RemoveKeyBinding(string id, string category = null);
+```
+
+## IKeyBinding
+
+```csharp
+string GetId();
+string GetCategory();
+InputAction GetAction();
+bool IsOverridden();
+void AddListener<T>(Action<T> action) where T : struct;
+void RemoveListener<T>(Action<T> action) where T : struct;
+```
+
+Overrides stored at `settings.key_bindings.\{category\}.\{id\}`.

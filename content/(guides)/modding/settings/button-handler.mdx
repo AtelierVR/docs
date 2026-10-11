@@ -1,0 +1,49 @@
+---
+title: Button Handler
+description: Clickable action button
+---
+
+```csharp
+public abstract class ButtonHandler : IHandler {
+    public virtual bool IsTriggerable => true;
+    protected void SetLabel(string key, params string[] @params);
+    protected void SetButtonText(string key, params string[] @params);
+    protected void SetInteractable(bool interactable);
+    public abstract void OnClick(IContext context);
+}
+```
+
+## Example
+
+```csharp
+public class ReloadButton : ButtonHandler {
+    public ReloadButton() {
+        SetLabel("settings.entry.my_mod.general.reload.label");
+        SetButtonText("settings.entry.my_mod.general.reload.action");
+    }
+
+    public override string[] GetPath()
+        => new[] { "my-mod", "general", "reload" };
+
+    protected override GameObject GetPrefab()
+        => Main.CoreAPI.AssetAPI.GetAsset<GameObject>("settings:prefabs/button.prefab");
+
+    public override void OnClick(IContext context)
+        => MySystem.Reload();
+}
+```
+
+## Dynamic Text
+
+```csharp
+SetButtonText(state ? "settings.debug.microphone.stop" : "settings.debug.microphone.start");
+```
+
+## Async
+
+```csharp
+public override async void OnClick(IContext ctx) {
+    SetInteractable(false);
+    try { await Work(); } finally { SetInteractable(true); }
+}
+```

@@ -1,0 +1,48 @@
+---
+title: Range Handler
+description: Numeric slider
+---
+
+```csharp
+public abstract class RangeHandler : IHandler {
+    public float Value { get; }
+    protected void SetRange(float min, float max);
+    protected void SetStep(float step);
+    protected void SetValueKey(string key);
+    protected void SetTypeKey(string key, params string[] @params);
+    protected abstract void OnValueChanged(float value);
+}
+```
+
+## Example
+
+```csharp
+public class MyVolume : RangeHandler {
+    public MyVolume() {
+        SetRange(0f, 100f); SetStep(1f);
+        SetValue(Config.Load().Get(new[] { "settings", "my-mod", "volume" }, 80f), notify: false);
+        SetLabelKey("settings.entry.my_mod.audio.volume.label");
+        SetValueKey("settings.range.value.percent");
+    }
+
+    public override string[] GetPath()
+        => new[] { "my-mod", "audio", "volume" };
+
+    protected override GameObject GetPrefab()
+        => Main.CoreAPI.AssetAPI.GetAsset<GameObject>("settings:prefabs/range.prefab");
+
+    protected override void OnValueChanged(float value)
+        => Config.Load().Set(new[] { "settings", "my-mod", "volume" }, value).Save();
+}
+```
+
+## Value Display Keys
+
+| Key | Example |
+|-----|---------|
+| `settings.range.value.percent` | `80%` |
+| `settings.range.value.seconds` | `30 s` |
+| `settings.range.value.meters` | `200 m` |
+| `settings.range.value.framerate` | `144 FPS` |
+| `settings.range.value.float` | `80.00` |
+| `settings.range.value.integer` | `80` |

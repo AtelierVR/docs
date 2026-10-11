@@ -1,0 +1,9 @@
+{
+    "title": "Terminal",
+    "icon": "command-line",
+    "pages": [
+        "index",
+        "create-command",
+        "environments"
+    ]
+}

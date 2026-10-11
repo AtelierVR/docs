@@ -1,0 +1,66 @@
+---
+title: Environments
+description: Variables, command chaining, and the result key
+---
+
+Environment variables are per terminal instance (`Dictionary<string, object>`).
+
+## API
+
+```csharp
+T GetEnvironment<T>(string key, T defaultValue = default);
+void SetEnvironment(string key, object value);  // null removes
+object GetResult();   // sugar for GetEnvironment<object>("result")
+void SetResult(object result);
+```
+
+Keys are case-insensitive (`TO_UPPER_INVARIANT`).
+
+## $VAR Substitution
+
+`$VARIABLE` references in input are replaced before execution:
+
+```
+> set NAME World
+> echo Hello $NAME   → "Hello World"
+```
+
+Uses `.ToString()` on the value. Missing vars left as literal `$NAME`.
+
+## result
+
+Every command sets `result` — the implicit return value:
+
+| Command | `result` type |
+|---------|--------------|
+| `config get` | `JToken` |
+| `curl url` | `string` |
+| `mods list` | `IMod[]` |
+| `settings list` | `List<IHandler>` |
+| `set KEY val` | `string` |
+
+## Command Chaining
+
+```
+> curl https://api.example.com/user
+{ "name": "Alice" }
+```
+
+```
+> echo $result
+{ "name": "Alice" }
+```
+
+```
+> set DATA $result
+```
+
+## print_executing
+
+Toggles the `[Executing: ...]` prefix. Default `true`.
+
+```
+> set print_executing false
+> echo hello
+hello         (no prefix)
+```

@@ -1,0 +1,12 @@
+{
+    "title": "Settings",
+    "icon": "adjustments-horizontal",
+    "pages": [
+        "index",
+        "create-handler",
+        "toggle-handler",
+        "range-handler",
+        "button-handler",
+        "dropdown-handler"
+    ]
+}

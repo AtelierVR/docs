@@ -1,0 +1,53 @@
+---
+title: Dropdown Handler
+description: Selection list
+---
+
+```csharp
+public abstract class DropdownHandler : ButtonHandler {
+    public override bool IsTriggerable => false;
+    protected void SetOptions(Dictionary<string, string[]> options);
+    protected void SetValue(string value, bool notify = true);
+    protected virtual void OnValueChanged(string value);
+    protected abstract IModalBuilder GetModalBuilder(IMenu menu);
+}
+```
+
+## Example
+
+```csharp
+public class QualityDropdown : DropdownHandler {
+    public QualityDropdown() {
+        SetLabel("settings.entry.graphic.quality.preset.label");
+        SetOptions(new Dictionary<string, string[]> {
+            { "low",    new[] { "settings.entry.graphic.quality.option.low" } },
+            { "medium", new[] { "settings.entry.graphic.quality.option.medium" } },
+            { "high",   new[] { "settings.entry.graphic.quality.option.high" } }
+        });
+        SetValue(Config.Load().Get(new[] { "settings", "graphic", "quality" }, "high"), notify: false);
+    }
+
+    public override string[] GetPath()
+        => new[] { "graphic", "quality", "preset" };
+
+    protected override GameObject GetPrefab()
+        => Main.CoreAPI.AssetAPI.GetAsset<GameObject>("settings:prefabs/dropdown.prefab");
+
+    protected override IModalBuilder GetModalBuilder(IMenu menu)
+        => menu.CreateModalBuilder();
+
+    protected override void OnValueChanged(string value)
+        => Config.Load().Set(new[] { "settings", "graphic", "quality" }, value).Save();
+}
+```
+
+## Dynamic Options
+
+```csharp
+var options = new Dictionary<string, string[]>();
+foreach (var device in Microphone.devices)
+    options[device] = new[] { "value", device };
+SetOptions(options);
+```
+
+Option localization: `settings.entry.\{category\}.\{entry\}.option.\{value\}`

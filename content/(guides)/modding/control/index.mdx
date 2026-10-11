@@ -1,0 +1,52 @@
+---
+title: Overview
+description: External control via WebSocket, MCP, and HTTP REST
+---
+import { getIcon } from "@/lib/source";
+
+The **nox.control** module is Nox's external control system for IDEs, dashboards,
+CLI tools, and AI agents — all backed by a single operator registry.
+
+<Cards>
+    <Card
+        icon={getIcon("bolt")}
+        href="/docs/guides/modding/control/websocket"
+        title="WebSocket Protocol"
+        description="Connect and interact with the WebSocket server. Handshake, permissions, and events."
+    />
+    <Card
+        icon={getIcon("cpu-chip")}
+        href="/docs/guides/modding/control/mcp"
+        title="MCP Integration"
+        description="Expose operators as MCP tools for AI agents. JSON-RPC 2.0 over HTTP."
+    />
+    <Card
+        icon={getIcon("globe-alt")}
+        href="/docs/guides/modding/control/http"
+        title="HTTP REST API"
+        description="Simple HTTP endpoints for scripting and debugging."
+    />
+    <Card
+        icon={getIcon("plus-circle")}
+        href="/docs/guides/modding/control/create-operator"
+        title="Creating an Operator"
+        description="Add custom operators from your own mod. Step-by-step guide."
+    />
+</Cards>
+
+## Transports
+
+| Transport | Port | Path | Auth |
+|-----------|------|------|------|
+| **WebSocket** | `8000` | `/` | hello handshake + permissions |
+| **MCP** | `8001` | `/mcp` | `Authorization: Bearer token` |
+| **HTTP REST** | `8001` | `/api/*` | `Authorization: Bearer token` |
+
+## Configuration
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `settings.control.port` | `8000` | WebSocket port |
+| `settings.control.http_port` | `8001` | HTTP/MCP port |
+| `settings.control.mcp` | `false` | Enable MCP |
+| `settings.control.token` | auto-generated | Access token |

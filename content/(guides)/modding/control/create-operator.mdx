@@ -1,0 +1,191 @@
+---
+title: Creating an Operator
+description: Add custom operators from your mod
+---
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+<Steps>
+  <Step>
+    ### Edit `nox.mod.json`
+
+    Add the dependency and load order:
+
+    ```json
+    {
+      "type": "mod",
+      "id": "my.mod",
+      "version": "1.0.0",
+      "relations": [
+        {
+          "id": "control",
+          "type": "depends",
+          "version": ">=1.0.0",
+          "register": "git+https://github.com/AtelierVR/nox.control.git"
+        }
+      ],
+      "constraints": [
+        { "type": "after", "id": "control" }
+      ]
+    }
+    ```
+  </Step>
+  <Step>
+    ### Create the `.asmdef`
+
+    ```json
+    {
+      "name": "My.Mod",
+      "references": [
+        "Nox.Control",
+        "Nox.CCK.Control"
+      ]
+    }
+    ```
+  </Step>
+  <Step>
+    ### Define the Input Schema
+
+    The `InputSchema` class provides a fluent API that becomes JSON Schema for MCP:
+
+    ```csharp
+    public ISchema Schema => new InputSchema()
+        .Property<string>("key", "The configuration key", required: true)
+        .Property<int>("port", "The port number")
+        .Property<bool>("pretty", "Enable pretty-printing");
+    ```
+
+    | C# Type | JSON Schema |
+    |---------|-------------|
+    | `string` | `"string"` |
+    | `int`, `long`, `float`, `double`, `decimal` | `"number"` |
+    | `bool` | `"boolean"` |
+
+    #### Required Permissions
+
+    ```csharp
+    public string[] RequiredPermissions => new[] { "config:read" };
+    // null or empty = public (no access control)
+    ```
+  </Step>
+  <Step>
+    ### Implement
+
+    ```csharp
+    using Cysharp.Threading.Tasks;
+    using Nox.CCK.Control;
+
+    public class PerfStats : IOperator {
+        public string Name => "perf_stats";
+        public string Description => "Returns FPS and frame time.";
+        public string[] RequiredPermissions => new[] { "perf:read" };
+        public ISchema Schema => new InputSchema();
+
+        public async UniTask<IOutput> Execute(IInput args) {
+            await UniTask.Yield();
+            return OperatorOutput.Ok(new {
+                fps = 1f / Time.unscaledDeltaTime
+            });
+        }
+    }
+    ```
+  </Step>
+  <Step>
+    ### Register
+
+    ```csharp
+    public class Main : IMainModInitializer {
+        public static Main Instance;
+        public IMainModCoreAPI CoreAPI;
+
+        public static IControlAPI ControlAPI =>
+            Instance.CoreAPI.ModAPI
+                .GetMod("control")
+                ?.GetInstance<IControlAPI>();
+
+        private uint _id;
+
+        public void OnInitializeMain(IMainModCoreAPI api) {
+            Instance = this;
+            CoreAPI = api;
+            _id = ControlAPI.Register(new PerfStats());
+        }
+
+        public void OnDisposeMain() {
+            ControlAPI?.Unregister(_id);
+            Instance = null;
+            CoreAPI = null;
+        }
+    }
+    ```
+  </Step>
+  <Step>
+    ### Permission Localization
+
+    Optional — only if creating new permission types. Convention:
+
+    ```
+    permission.{scope}.{action}.label
+    permission.{scope}.{action}.description
+    ```
+
+    ```csharp
+    private LanguagePack _pack;
+
+    // In OnInitializeMain:
+    _pack = api.AssetAPI.GetAsset<LanguagePack>("lang.asset");
+    LanguageManager.AddPack(_pack);
+
+    // In OnDisposeMain:
+    LanguageManager.RemovePack(_pack);
+    ```
+  </Step>
+</Steps>
+
+## Reference
+
+### IOperator
+
+```csharp
+public interface IOperator {
+    string Name { get; }                    // Unique name — used as event/command
+    string Description { get; }             // Human-readable description
+    ISchema Schema { get; }                 // Input schema → JSON Schema for MCP
+    string[] RequiredPermissions { get; }   // null/empty = public
+    UniTask<IOutput> Execute(IInput args);  // Async execution
+}
+```
+
+### IInput — reading arguments
+
+```csharp
+public interface IInput {
+    T Get<T>(string key, bool required = false);
+    bool Has<T>(string key);
+    IReadOnlyDictionary<string, object> All { get; }
+}
+```
+
+Call `args.Get<string>("key")` or `args.Get<int>("port")`. If `required: true` and
+the key is missing, an exception is thrown.
+
+### OperatorOutput — returning results
+
+```csharp
+// Success → { "ok": true, "value": ... }
+OperatorOutput.Ok(someObject);
+
+// Error → { "ok": false, "error": "message" }
+OperatorOutput.Error("Something went wrong");
+```
+
+### InputSchema — type mapping
+
+Implemented by `SchemaConverter.ToJsonType()`:
+
+| C# Type | JSON Schema |
+|---------|-------------|
+| `string` | `"string"` |
+| `int`, `long`, `float`, `double`, `decimal` | `"number"` |
+| `bool` | `"boolean"` |
+| `object`, `JToken`, `JObject`, `JArray` | `"object"` |
+| All other types | `"string"` (fallback) |

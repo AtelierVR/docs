@@ -1,0 +1,8 @@
+{
+    "title": "Keybinding",
+    "icon": "key",
+    "pages": [
+        "index",
+        "create-keybinding"
+    ]
+}

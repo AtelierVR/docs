@@ -1,0 +1,94 @@
+---
+title: Logger API
+description: Structured logging with tags, levels, and Unity object context.
+icon: document-text
+---
+
+The `ILoggerAPI` provides uniform logging for all mods. Access it via `api.LoggerAPI`.
+
+## Log Levels
+
+| Method | Severity |
+|---|---|
+| `LogDebug(message)` | Debug — stripped in release builds. |
+| `Log(message)` | Info — normal operation. |
+| `LogWarning(message)` | Warning — non-critical issues. |
+| `LogError(message)` | Error — something went wrong. |
+| `LogException(exception)` | Exception — full stack trace. |
+
+---
+
+## Basic Usage
+
+```csharp
+public void OnInitialize(IModCoreAPI api) {
+    api.LoggerAPI.Log("Mod initialized.");
+    api.LoggerAPI.LogWarning("Optional dependency not found, some features disabled.");
+    api.LoggerAPI.LogError("Failed to connect to server.");
+    api.LoggerAPI.LogDebug($"Processing {count} items...");
+}
+```
+
+---
+
+## With Unity Object Context
+
+Pass a `UnityEngine.Object` to make log entries clickable in the Editor console:
+
+```csharp
+api.LoggerAPI.Log("Asset loaded.", myGameObject);
+api.LoggerAPI.LogWarning("Missing component.", myComponent);
+api.LoggerAPI.LogError("Invalid state.", myScriptableObject);
+api.LoggerAPI.LogDebug("Processing...", myBehaviour);
+```
+
+Clicking the log in the Unity Console will ping the referenced object.
+
+---
+
+## Exception Logging
+
+```csharp
+try {
+    DoSomethingRisky();
+} catch (Exception ex) {
+    api.LoggerAPI.LogException(ex);
+    // Also with context:
+    api.LoggerAPI.LogException(ex, this);
+}
+```
+
+---
+
+## Where Logs Are Stored
+
+All logs are written to disk automatically. Each mod's logs are tagged with its mod ID.
+
+| Detail | Value |
+|---|---|
+| **Folder** | `{AppPath}/logs/` |
+| **File** | `latest.log` |
+| **AppPath (Windows)** | `%APPDATA%/.nox/` |
+| **AppPath (Linux)** | `~/.local/share/nox/` |
+| **AppPath (macOS)** | `~/Library/Application Support/nox/` |
+
+The logger keeps the last **1000 lines** in memory (`Logger.History`) and rotates the file when it exceeds **10 MB**. A persistent file handle is kept open to avoid per-write overhead.
+
+In the Unity Editor, you can access logs via: **Nox** → **Logger** → **Open Latest Log** / **Reveal Latest Log** / **Clear Logs**.
+
+<Callout type="info">
+    Every `api.LoggerAPI.Log(...)` call is automatically tagged with your mod ID (from `nox.mod.json`), so you can grep logs by mod: `grep "my.super.mod" latest.log`.
+</Callout>
+
+---
+
+## Full API Reference
+
+| Method | Description |
+|---|---|
+| `Log(string)` | Info-level message. |
+| `LogWarning(string)` | Warning-level message. |
+| `LogError(string)` | Error-level message. |
+| `LogDebug(string)` | Debug-level (stripped in release). |
+| `LogException(Exception)` | Full exception with stack trace. |
+| *All above +* `(string, Object)` | Same levels, with Unity context for Editor ping. |

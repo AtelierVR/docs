@@ -1,0 +1,8 @@
+{
+    "title": "Audio",
+    "icon": "speaker-wave",
+    "pages": [
+        "index",
+        "create-channel"
+    ]
+}

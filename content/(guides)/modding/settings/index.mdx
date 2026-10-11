@@ -1,0 +1,50 @@
+---
+title: Overview
+description: Add settings handlers to your mod
+---
+import { getIcon } from "@/lib/source";
+
+The **nox.settings** module provides the settings framework — registration,
+persistence, and UI rendering of configurable values.
+
+<Cards>
+    <Card
+        icon={getIcon("plus-circle")}
+        href="/docs/guides/modding/settings/create-handler"
+        title="Creating a Handler"
+        description="Add custom settings to your mod. Toggle, range, button, or dropdown."
+    />
+    <Card
+        icon={getIcon("check-circle")}
+        href="/docs/guides/modding/settings/toggle-handler"
+        title="Toggle Handler"
+        description="Boolean on/off switch."
+    />
+    <Card
+        icon={getIcon("bars-3")}
+        href="/docs/guides/modding/settings/range-handler"
+        title="Range Handler"
+        description="Numeric slider with value formatting."
+    />
+    <Card
+        icon={getIcon("play")}
+        href="/docs/guides/modding/settings/button-handler"
+        title="Button Handler"
+        description="Clickable action button."
+    />
+    <Card
+        icon={getIcon("chevron-up-down")}
+        href="/docs/guides/modding/settings/dropdown-handler"
+        title="Dropdown Handler"
+        description="Selection list with modal."
+    />
+</Cards>
+
+## Handler Types
+
+| Handler | Use for |
+|---------|---------|
+| `ToggleHandler` | Boolean on/off switch |
+| `RangeHandler` | Numeric slider (volume, FOV, distance) |
+| `ButtonHandler` | Action button (reload, test, trigger) |
+| `DropdownHandler` | Selection list (quality, language, device) |

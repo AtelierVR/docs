@@ -1,0 +1,163 @@
+---
+title: Event API
+description: Publish/subscribe event system for cross-mod communication.
+icon: bolt
+---
+
+The `IEventAPI` is a pub/sub event bus. Mods emit events and other mods subscribe to react.
+Access it via `api.EventAPI`.
+
+## Concepts
+
+| Concept | Role |
+|---|---|
+| **Event name** | A string key identifying the event (e.g., `"user.login"`). |
+| **Emit** | Fire an event with optional data. |
+| **Subscribe** | Register a callback for an event name. |
+| **Weight** | Execution order — lower weights run first. |
+| **Channels** | Context filter (`Main`, `Client`, `Editor`, etc.). |
+
+---
+
+## Emitting Events
+
+### Simple emit
+
+`Emit(string eventName, params object[] data)` — the quick form for most cases:
+
+```csharp
+// Broadcast without reply
+api.EventAPI.Emit("player.jump", 2.5f, Vector3.up);
+
+// Broadcast with a reply callback as last argument
+api.EventAPI.Emit("player.jump", 2.5f, Vector3.up,
+    new Action<object[]>(reply => api.LoggerAPI.Log($"Replied with {reply[0]}")));
+```
+
+Internally, this is converted to an `EventContext` with default values:
+
+| Simple parameter | → `EventContext` field | Default |
+|---|---|---|
+| `eventName` | `EventContext.EventName` | — |
+| `data` (all but last) | `EventContext.Data` | — |
+| last `Action<object[]>` arg | `EventContext.Callback` | `null` if absent |
+| *(implicit)* | `EventContext.Channel` | `EventEntryFlags.Internal` |
+| *(implicit)* | `EventContext.Destination` | `null` (broadcast) |
+
+<Callout type="info">
+    If the last positional argument is an `Action<object[]>`, it is treated as the reply callback, not data.
+</Callout>
+
+### Full context emit
+
+`Emit(EventContext context)` — for advanced control over routing and replies:
+
+```csharp
+var ctx = new EventContext {
+    EventName = "user.login",
+    Data = new object[] { userId, timestamp },
+    Channel = EventEntryFlags.Main | EventEntryFlags.Client,  // only these contexts
+    Destination = "nox.discord",                               // target a specific mod
+    Callback = reply => api.LoggerAPI.Log("Acknowledged")      // get a response
+};
+api.EventAPI.Emit(ctx);
+```
+
+<Callout type="info">
+    Use simple emit for broadcasts. Use full context when you need to filter by channel, target a specific mod, or handle a reply.
+</Callout>
+
+---
+
+## Subscribing to Events
+
+### `Subscribe(string eventName, EventCallback callback)`
+
+The most common form. Returns an `EventSubscription`.
+
+```csharp
+var sub = api.EventAPI.Subscribe("player.jump", data => {
+    if (data.TryGet<float>(0, out var height))
+        Debug.Log($"Player jumped {height}m");
+});
+```
+
+### Callback signature
+
+```csharp
+public delegate void EventCallback(EventData context);
+```
+
+`EventData` gives you:
+
+| Member | Description |
+|---|---|
+| `EventName` | The event that triggered this callback. |
+| `Data` | `object[]` passed by the emitter. |
+| `Source` | The `IMod` that emitted the event. |
+| `SourceChannel` | Which `EventEntryFlags` channel it came from. |
+| `TryGet<T>(index, out value)` | Type-safe access to `Data[index]`. |
+| `Callback(params object[] args)` | Invoke a nested callback. |
+
+---
+
+## Unsubscribing
+
+```csharp
+// By subscription object
+api.EventAPI.Unsubscribe(sub);
+
+// By UID
+api.EventAPI.Unsubscribe(12345u);
+
+// All subscriptions for an event name
+api.EventAPI.UnsubscribeAll("player.jump");
+
+// All subscriptions from this mod
+api.EventAPI.UnsubscribeAll();
+```
+
+---
+
+## Event Channels (`EventEntryFlags`)
+
+Filter events by context:
+
+| Flag | Value |
+|---|---|
+| `Main` | 1 |
+| `Client` | 2 |
+| `Instance` | 4 |
+| `Editor` | 8 |
+| `Server` | 16 |
+| `Custom` | 32 |
+| `Internal` | `Main \| Client \| Editor \| Server` |
+| `All` | Everything |
+
+<Callout type="info">
+    Events are **not** networked by default. Use channels to control which context receives them.
+</Callout>
+
+## Cross-Mod Communication
+
+Events are the recommended way to communicate between mods without hard references:
+
+```csharp
+// In Mod A — emit an event with data
+api.EventAPI.Emit("player.jump", 2.5f, Vector3.up);
+
+// In Mod B — listen for it
+var sub = api.EventAPI.Subscribe("player.jump", data => {
+    if (data.TryGet<float>(0, out var height))
+        Debug.Log($"Player jumped {height}m");
+});
+
+// Always unsubscribe in OnDispose
+public void OnDispose() {
+    api.EventAPI.Unsubscribe(sub);
+}
+```
+
+<Callout type="warn">
+    Prefer events over direct references. Events keep mods loosely coupled and independently testable.
+</Callout>

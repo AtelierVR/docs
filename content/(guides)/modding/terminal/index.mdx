@@ -1,0 +1,98 @@
+---
+title: Overview
+description: In-game terminal console and command-line interface
+---
+import { getIcon } from "@/lib/source";
+
+The **nox.terminal** module provides an in-game terminal with a command registry
+that other mods can extend.
+
+<Cards>
+    <Card
+        icon={getIcon("plus-circle")}
+        href="/docs/guides/modding/terminal/create-command"
+        title="Creating a Command"
+        description="Add custom commands to the terminal from your mod."
+    />
+    <Card
+        icon={getIcon("variable")}
+        href="/docs/guides/modding/terminal/environments"
+        title="Environments"
+        description="Variables, command chaining, and the result key."
+    />
+</Cards>
+
+## Built-in Commands
+
+| Command | Usage |
+|---------|-------|
+| `help` | `help [command]` |
+| `echo` | `echo text` |
+| `clear` | `clear` |
+| `config` | `config get\|set\|has\|del [path] [value]` |
+| `mods` | `mods list\|get [id]` |
+| `set` / `get` / `unset` | Environment variables |
+| `curl` | `curl url` |
+
+## Execution Model
+
+Commands are executed via **linear scan** — the first `ICommand.Execute()` that returns
+`true` wins. Each command parses its own name from the input and returns `false` if it
+doesn't match:
+
+```csharp
+public UniTask<bool> Execute(string input, IContext context) {
+    var parts = input.Trim().Split(' ', 2);
+    if (!parts[0].Equals("mycmd", StringComparison.OrdinalIgnoreCase))
+        return UniTask.FromResult(false);  // Not mine — let next command try
+
+    context.PrintLn("Command handled!");
+    context.SetResult(true);               // Store result for $result chaining
+    return UniTask.FromResult(true);       // Handled — stop scanning
+}
+```
+
+### ArgParser
+
+For complex argument parsing, use `ArgsParser` from `Nox.CCK.Utils`. Pass the raw input
+minus the command name:
+
+```csharp
+var args = ArgsParser.Parse(input.Substring(cmdLen));
+var name = args.Get("name", "World");       // --name World
+var verbose = args.GetBool("verbose");       // --verbose (boolean flag)
+var ids = args.GetArray("ids", ',');         // --ids a,b,c
+var deps = args.GetDictionary("dep");        // --dep mod=1.0 --dep lib=2.0
+var dest = args.Positional.Length > 0
+    ? args.Positional[0] : "default";        // first positional arg
+```
+
+| Format | Example | Result |
+|--------|---------|--------|
+| `--key value` | `--name World` | `Get("name")` → `"World"` |
+| `--key=value` | `--name=World` | `Get("name")` → `"World"` |
+| `--flag` | `--verbose` | `GetBool("verbose")` → `true` |
+| `--no-flag` | `--no-verbose` | `GetBool("verbose")` → `false` |
+| `-k value` | `-n World` | `Get("n")` → `"World"` |
+| `-k=value` | `-n=World` | `Get("n")` → `"World"` |
+| `-abc` | multi-flag | `GetBool("a")`,`b`,`c` → `true` |
+| `--dep k=v,k=v` | dictionary | `GetDictionary("dep")` |
+
+Short flags are case-sensitive (`-n` ≠ `-N`). Long flags are lowercase-normalized.
+Repeated keys accumulate: `--id 1 --id 2` → `GetArray("id")` → `["1","2"]`.
+
+## IContext
+
+Every command receives an `IContext`:
+
+```csharp
+context.PrintLn("output");            // Write to terminal
+context.SetEnvironment("KEY", val);   // Store variable
+context.GetEnvironment<T>("KEY");     // Read variable
+context.SetResult(obj);               // Set $result for chaining
+context.Clear();                      // Clear output
+context.SetTitle("My Page");          // Set terminal title
+```
+
+See [Environments](/docs/guides/modding/terminal/environments) for `$VAR` substitution and
+command chaining with `$result`.

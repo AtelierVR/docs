@@ -1,0 +1,60 @@
+---
+title: Overview
+description: Input bindings with typed callbacks
+---
+import { getIcon } from "@/lib/source";
+
+The **nox.keybinding** module provides unified input bindings. Bind any Unity
+InputSystem path to a typed callback — users can override in settings, and
+overrides persist across restarts.
+
+<Cards>
+    <Card
+        icon={getIcon("plus-circle")}
+        href="/docs/guides/modding/keybinding/create-keybinding"
+        title="Creating a Keybinding"
+        description="Register input bindings with typed callbacks."
+    />
+</Cards>
+
+## Quick Example
+
+```csharp
+var kbManager = api.ModAPI.GetMod("keybinding")?.GetInstance<IKeyBindingManager>();
+
+// Register — category groups bindings in the UI
+var jump = kbManager.AddKeyBinding("jump", "<Keyboard>/space", "movement");
+jump.AddListener<float>(v => _jumpValue = v);
+
+// Multiple keys in the same category
+var forward  = kbManager.AddKeyBinding("forward",  "<Keyboard>/w", "movement");
+var backward = kbManager.AddKeyBinding("backward", "<Keyboard>/s", "movement");
+forward.AddListener<float>(OnMove);
+backward.AddListener<float>(OnMove);
+
+// Cleanup
+jump.RemoveListener<float>(v => _jumpValue = v);
+```
+
+## Input Types
+
+| Type | Example Binding | Listener |
+|------|----------------|----------|
+| `float` | `<Keyboard>/w` | `AddListener<float>` |
+| `float` | `<Mouse>/leftButton` | `AddListener<float>` |
+| `float` | `<Gamepad>/buttonSouth` | `AddListener<float>` |
+| `float` | `<XRController>/{LeftHand}/{Trigger}` | `AddListener<float>` |
+| `Vector2` | `<XRController>/{LeftHand}/Primary2DAxis` | `AddListener<Vector2>` |
+| `Vector2` | `<Keyboard>/wasd` (composite) | `AddListener<Vector2>` |
+
+## Persistence
+
+User overrides are stored at `settings.key_bindings.\{category\}.\{id\}`.
+When a binding is registered, saved overrides are automatically applied.
+Check `binding.IsOverridden()` to detect user customization.
+
+## Editor Panel
+
+An inspector panel at `["keybinding"]` shows all registered bindings with
+current keys, listener counts, and override status. Accessible from the
+Nox editor tools.

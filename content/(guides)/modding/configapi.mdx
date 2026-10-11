@@ -1,0 +1,122 @@
+---
+title: Config API
+description: Persistent per-mod configuration storage on disk.
+icon: bookmark
+---
+
+The `IConfigAPI` gives your mod a dedicated folder for storing configuration files. Access it via `api.ConfigAPI`.
+
+## How It Works
+
+Each mod gets its own folder inside the Nox config directory:
+
+| Detail | Value |
+|---|---|
+| **Per-mod folder** | `{ConfigPath}/{mod_id}/` |
+| **ConfigPath (Windows)** | `%APPDATA%/.nox/config/` |
+| **ConfigPath (Linux)** | `~/.local/share/nox/config/` |
+| **ConfigPath (macOS)** | `~/Library/Application Support/nox/config/` |
+| **Persistence** | Survives restarts and mod reloads. |
+
+Example: the mod `my.super.mod` stores files at `~/.local/share/nox/config/my.super.mod/settings.json`.
+
+<Callout type="info">
+    The folder is created automatically on the first call to `GetFolder()`.  
+    Files are **not** deleted when the mod is unloaded — only `ClearFolder()` removes them.
+</Callout>
+
+---
+
+## Reading and Writing Config
+
+`IConfigAPI` only provides folder access. To read and write actual config files, use the `Config` utility class from `Nox.CCK.Utils`:
+
+```csharp
+using Nox.CCK.Utils;
+using System.IO;
+
+public void OnInitialize(IModCoreAPI api) {
+    var folder = api.ConfigAPI.GetFolder();
+    var path = Path.Combine(folder, "settings.json");
+
+    // Load existing config (or create new)
+    var config = new Config();
+    config.Load(path);
+
+    // Read a value with default
+    var volume = config.Get("audio.volume", 1.0f);
+
+    // Write a value
+    config.Set("audio.volume", 0.5f);
+    config.Set("ui.theme", "dark");
+
+    // Persist to disk
+    config.Save();
+}
+```
+
+---
+
+## Global Config
+
+The `Config` class also provides a global singleton for app-wide settings:
+
+```csharp
+// Load the global Nox config
+var global = Config.Load();
+
+// Read
+var language = global.Get<string>("ui.language", "en");
+
+// Write and save
+global.Set("ui.language", "fr");
+global.Save();
+```
+
+| Path | Description |
+|---|---|
+| `Config.Load()` | `{AppPath}/config.json` — global app config. |
+| `Config.LoadEditor()` | `Library/NoxEditorConfig.json` — editor-only config. |
+
+<Callout type="warn">
+    `Config.Load()` returns the **global** app config. For per-mod settings, create your own files inside `api.ConfigAPI.GetFolder()`.
+</Callout>
+
+---
+
+## Config API Reference
+
+| Method | Description |
+|---|---|
+| `Has(key)` | Check if a dot-path key exists (e.g., `"audio.volume"`). |
+| `Get<T>(key, default)` | Read a typed value with fallback. |
+| `Set<T>(key, value)` | Write a value (auto-creates intermediate objects). |
+| `Remove(key)` | Delete a key. |
+| `Save()` | Write to disk. |
+
+Keys use dot-path notation: `"section.subsection.key"`.
+
+```csharp
+config.Set("players.123.name", "Alice");
+config.Set("players.123.score", 9000);
+// Produces: { "players": { "123": { "name": "Alice", "score": 9000 } } }
+```
+
+If the file is corrupted, it is automatically renamed to `.bak` and a fresh default is created.
+
+---
+
+## `IConfigAPI` Reference
+
+| Method | Description |
+|---|---|
+| `GetFolder()` | Returns `{ConfigPath}/{mod_id}/`. Creates the folder if missing. |
+| `ClearFolder()` | Deletes the folder and all its contents. |
+
+---
+
+## Editor Access
+
+In the Unity Editor: **Nox** → **Config** → **Edit Config** / **Reveal Config** to open the global config file.
+
+For per-mod config (e.g., `my.super.mod/settings.json`), the files are plain JSON — use any text editor.

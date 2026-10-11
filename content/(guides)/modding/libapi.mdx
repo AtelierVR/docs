@@ -1,0 +1,81 @@
+---
+title: Lib API
+description: Load native plugins (.dll, .so, .dylib) from your mod.
+icon: cog
+---
+
+The `ILibAPI` gives you access to native libraries bundled with your mod. Access it via `api.LibAPI`.
+
+## Folder Discovery
+
+Native libraries live in `Plugins/<arch>/` inside your mod folder.
+
+```csharp
+// All native plugin folders
+string[] folders = api.LibAPI.GetFolders();
+// e.g., ["/Mods/my.super.mod/Plugins/x86_64", "/Mods/my.super.mod/Plugins/aarch64"]
+
+// All library files in those folders
+string[] libs = api.LibAPI.GetLibraries();
+// e.g., ["libopus.so", "libvpx.so"]
+
+// Platform-native extension
+string ext = api.LibAPI.GetExtension();
+// ".dll" on Windows, ".so" on Linux, ".dylib" on macOS
+
+// Sub-folders (for complex plugin structures)
+string[] subs = api.LibAPI.GetSubFolders();
+```
+
+---
+
+## Loading a Library
+
+```csharp
+// Resolve full path
+string path = api.LibAPI.ToPath("opus");
+// → "/Mods/my.super.mod/Plugins/x86_64/libopus.so"
+
+// Load it
+try {
+    api.LibAPI.Load("opus");
+    api.LoggerAPI.LogDebug("Native library loaded.");
+} catch (DllNotFoundException) {
+    api.LoggerAPI.LogError("Library not found or failed to load.");
+}
+```
+
+---
+
+## Unloading
+
+```csharp
+api.LibAPI.Unload("opus");
+```
+
+<Callout type="warn">
+    `Load()` throws `DllNotFoundException` if the library cannot be found or fails to load. Always wrap in try/catch.
+</Callout>
+
+---
+
+## Full API Reference
+
+| Method | Description |
+|---|---|
+| `GetFolders()` | All plugin folders for the current platform. |
+| `GetLibraries()` | All library file names found. |
+| `GetExtension()` | Platform-native extension (`.dll` / `.so` / `.dylib`). |
+| `GetSubFolders()` | Sub-folders under the plugin directory. |
+| `ToPath(name)` | Resolves a library name to its full path. |
+| `Load(name)` | Loads the native library into the process. |
+| `Unload(name)` | Unloads the native library. |
+
+---
+
+## Platform Paths
+
+| Context | Plugin path |
+|---|---|
+| **Build** (KernelMod) | `Application.dataPath/Plugins/<arch>/` |
+| **Editor** (ExternalMod) | `<modFolder>/Plugins/<arch>/` |

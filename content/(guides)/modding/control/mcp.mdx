@@ -1,0 +1,200 @@
+---
+title: MCP Integration
+description: Model Context Protocol for AI agents
+---
+
+MCP exposes all registered operators as standard tools via `POST /mcp` on port `8001`.
+Disabled by default — enable with `settings.control.mcp = true`.
+
+## Authentication
+
+Token from `settings.control.token` (auto-generated on first run — 32 random bytes,
+Base64-encoded). Pass via `Authorization: Bearer token` header.
+
+For the `initialize` method, the token is also accepted as `params.token`.
+
+## JSON-RPC 2.0 Format
+
+All MCP requests must be valid JSON-RPC 2.0:
+
+```json
+{ "jsonrpc": "2.0", "id": 1, "method": "...", "params": { ... } }
+```
+
+If `id` is `null`, the request is treated as a **notification** — no response is sent.
+
+## Methods
+
+### `initialize`
+
+Authenticates the client and returns server capabilities.
+
+```json
+// Request
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-11-25",
+    "clientInfo": { "name": "VS Code", "version": "1.90.0" },
+    "token": "auto-generated-token"
+  }
+}
+
+// Response
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": { "tools": {} },
+    "serverInfo": {
+      "name": "Nox - My App",
+      "version": "1.0.0",
+      "description": "A Nox-based application"
+    }
+  }
+}
+```
+
+### `tools/list`
+
+Returns all registered `IOperator` instances as MCP tools, with their `inputSchema`
+converted to JSON Schema via `SchemaConverter.ToJObject()`.
+
+```json
+// Request
+{ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }
+
+// Response
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "tools": [
+      {
+        "name": "config_get",
+        "description": "Read a configuration value.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "key": { "type": "string", "description": "The configuration key" }
+          },
+          "required": ["key"]
+        }
+      }
+    ]
+  }
+}
+```
+
+### `tools/call`
+
+Calls an operator by name. Arguments go in `params.arguments`.
+
+```json
+// Request
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "config_get",
+    "arguments": { "key": "settings.control.port" }
+  }
+}
+
+// Response
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "content": [{ "type": "text", "text": "{\"ok\":true,\"value\":8000}" }]
+  }
+}
+```
+
+### `ping`
+
+Health check. Returns an empty object.
+
+```json
+// Request
+{ "jsonrpc": "2.0", "id": 4, "method": "ping" }
+
+// Response
+{ "jsonrpc": "2.0", "id": 4, "result": {} }
+```
+
+## VS Code Configuration
+
+Create `.vscode/mcp.json` in your project:
+
+```json
+{
+    "mcpServers": {
+        "nox": {
+            "type": "http",
+            "url": "http://localhost:8001/mcp",
+            "headers": { "Authorization": "Bearer YOUR_TOKEN" }
+        }
+    }
+}
+```
+
+## How Operators Map
+
+Every `IOperator` is automatically exposed as an MCP tool:
+
+| Operator member | MCP equivalent |
+|----------------|----------------|
+| `Name` | Tool `name` |
+| `Description` | Tool `description` |
+| `Schema` | `inputSchema` — converted to JSON Schema by `SchemaConverter.ToJObject()` |
+| `Execute(IInput)` → `IOutput` | Tool execution → `content[{ type: "text", text: ... }]` |
+
+The `InputSchema` fluent API becomes JSON Schema:
+
+```csharp
+new InputSchema()
+    .Property<string>("key", "The configuration key", required: true)
+    .Property<int>("port", "The port number")
+```
+
+Becomes:
+
+```json
+{
+    "type": "object",
+    "properties": {
+        "key": { "type": "string", "description": "The configuration key" },
+        "port": { "type": "number", "description": "The port number" }
+    },
+    "required": ["key"]
+}
+```
+
+### Type Mapping
+
+Implemented in `SchemaConverter.ToJsonType()`:
+
+| C# Type | JSON Schema Type |
+|---------|-----------------|
+| `string` | `"string"` |
+| `int`, `long`, `float`, `double`, `decimal` | `"number"` |
+| `bool` | `"boolean"` |
+| `object`, `JToken`, `JObject`, `JArray` | `"object"` |
+| All other types | `"string"` (fallback) |
+
+## Error Codes
+
+| Code | Meaning |
+|------|---------|
+| `-32700` | Parse error — invalid JSON |
+| `-32600` | Invalid Request — not valid JSON-RPC 2.0 |
+| `-32601` | Method not found |
+| `-32602` | Invalid params |
+| `-32001` | Unauthorized — invalid or missing token |
+
+See [Creating an Operator](/docs/guides/modding/control/create-operator) for a complete guide.

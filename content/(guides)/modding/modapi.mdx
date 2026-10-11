@@ -1,0 +1,159 @@
+---
+title: Mod API
+description: Manage mods at runtime — list, load, unload, and reload.
+icon: cube
+---
+
+The `IModAPI` lets you query and control other mods at runtime. Access it via `api.ModAPI`.
+
+<Callout type="info">
+    You can only interact with mods declared in your `nox.mod.json` `relations`.  
+    Only **kernel mods** have unrestricted access to all mods.
+</Callout>
+
+## Methods
+
+### `GetMod(string id)`
+
+Returns an `IMod` instance by its identifier.
+
+```csharp
+var otherMod = api.ModAPI.GetMod("nox.audio");
+if (otherMod != null && otherMod.IsLoaded())
+    Debug.Log($"{otherMod.GetMetadata().GetId()} is loaded.");
+```
+
+### `GetMods()`
+
+Returns all currently known mods as an `IMod[]`.
+
+```csharp
+foreach (var mod in api.ModAPI.GetMods()) {
+    var meta = mod.GetMetadata();
+    api.LoggerAPI.Log($"{meta.GetId()} v{meta.GetVersion()}");
+}
+```
+
+### `LoadMod(string id)`
+
+Explicitly loads a mod by its identifier. Returns a `UniTask<IMod>`.
+
+```csharp
+var mod = await api.ModAPI.LoadMod("my.super.mod");
+if (mod.IsLoaded())
+    api.LoggerAPI.Log("Mod loaded successfully.");
+```
+
+### `UnloadMod(string id)`
+
+Unloads a mod. Returns `UniTask<bool>` — `true` on success.
+
+```csharp
+bool ok = await api.ModAPI.UnloadMod("my.super.mod");
+```
+
+### `ReloadMod(string id)`
+
+Reloads a mod (unload + load). Returns `UniTask<bool>`.
+
+```csharp
+await api.ModAPI.ReloadMod("my.super.mod");
+```
+
+### `GetMetadata(string id)`
+
+Returns `IModMetadata` for a given mod without needing the full `IMod` instance.
+
+```csharp
+var meta = api.ModAPI.GetMetadata("nox.cck");
+api.LoggerAPI.Log($"CCK version: {meta.GetVersion()}");
+```
+
+### `GetSelf()`
+
+Returns the `IMod` instance for your own mod.
+
+```csharp
+var self = api.ModAPI.GetSelf();
+api.LoggerAPI.Log($"My mod: {self.GetMetadata().GetId()}");
+```
+
+---
+
+## The `IMod` interface
+
+Returned by `GetMod`, `LoadMod`, and `GetSelf`:
+
+| Member | Description |
+|---|---|
+| `GetModType()` | Mod type string. |
+| `GetMetadata()` | Returns `IModMetadata` (id, version, authors). |
+| `GetData<T>(key, default)` | Read arbitrary mod data. |
+| `SetData<T>(key, value)` | Write arbitrary mod data. |
+| `HasData<T>(key)` | Check if a data key exists. |
+| `GetDatas()` | All key-value pairs. |
+| `IsLoaded()` | `true` if the mod is fully loaded. |
+| `Load()` / `Unload()` | Async load/unload. |
+| `GetProfiler()` | Performance profiling data. |
+| `GetAppDomain()` | The `AppDomain` the mod runs in. |
+| `GetInstance<T>()` | First instance of type `T` from the mod. |
+| `GetInstances<T>()` | All instances of type `T` from the mod. |
+
+## Discovering Mod Services
+
+Other mods can discover your services via `GetMod`:
+
+```csharp
+var audioMod = api.ModAPI.GetMod("nox.audio");
+if (audioMod != null) {
+    var audioAPI = audioMod.GetInstance<IAudioAPI>();
+    audioAPI?.SetVolume(0.5f);
+}
+```
+
+## Creating a Service
+
+To expose your mod as a service, implement the interface in your `Main` class (or `Client` class for `IClientModInitializer`). The runtime automatically registers it — other mods discover it via `GetInstance<T>()`.
+
+**Your mod** (`my.super.mod`):
+
+```csharp title="SDK/IGreeterAPI.cs"
+// SDK layer — only interfaces
+namespace My.Super.Mod {
+    public interface IGreeterAPI {
+        string SayHello(string name);
+    }
+}
+```
+
+```csharp title="Runtime/Main.cs"
+// Runtime layer — implement the interface directly in Main
+using Nox.CCK.Mods.Cores;
+using Nox.CCK.Mods.Initializers;
+
+namespace My.Super.Mod.Runtime {
+    public class Main : IMainModInitializer, IGreeterAPI {
+        public void OnInitialize(IModCoreAPI api) { }
+
+        public void OnDispose() { }
+
+        public string SayHello(string name)
+            => $"Hello {name}!";
+    }
+}
+```
+
+**Another mod** consuming your service:
+
+```csharp
+var greeterMod = api.ModAPI.GetMod("my.super.mod");
+if (greeterMod?.IsLoaded() == true) {
+    var greeter = greeterMod.GetInstance<IGreeterAPI>();
+    api.LoggerAPI.Log(greeter.SayHello("World"));
+}
+```
+
+<Callout type="info">
+    No singleton, no static field — the runtime wires everything.  
+    For loose coupling between mods, prefer the **[Event API](/docs/guides/modding/eventapi)**.
+</Callout>

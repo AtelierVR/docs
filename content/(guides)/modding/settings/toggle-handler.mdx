@@ -1,0 +1,36 @@
+---
+title: Toggle Handler
+description: Boolean on/off switch
+---
+
+```csharp
+public abstract class ToggleHandler : IHandler {
+    public bool Value { get; }
+    public void SetValue(bool value, bool notify = true);
+    protected void SetLabelKey(string key);
+    protected abstract void OnValueChanged(bool value);
+}
+```
+
+## Example
+
+```csharp
+public class MyToggle : ToggleHandler {
+    public MyToggle() {
+        var cfg = Config.Load();
+        SetValue(cfg.Get(new[] { "settings", "my-mod", "enabled" }, true), notify: false);
+        SetLabelKey("settings.entry.my_mod.general.enabled.label");
+    }
+
+    public override string[] GetPath()
+        => new[] { "my-mod", "general", "enabled" };
+
+    protected override GameObject GetPrefab()
+        => Main.CoreAPI.AssetAPI.GetAsset<GameObject>("settings:prefabs/toggle.prefab");
+
+    protected override void OnValueChanged(bool value)
+        => Config.Load().Set(new[] { "settings", "my-mod", "enabled" }, value).Save();
+}
+```
+
+Localization: `settings.entry.\{path\}.label`

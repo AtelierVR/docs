@@ -1,0 +1,227 @@
+---
+title: Implementing Features
+description: Use the initializer lifecycle and Core API to add features to your mod.
+---
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+import { Steps, Step } from "fumadocs-ui/components/steps";
+
+Once your mod is [scaffolded](/docs/guides/modding/setup), the real work begins: implementing features using the **initializer lifecycle** and the **Core API**.
+
+---
+
+## The Initializer Lifecycle
+
+Every mod entry point implements one or more initializer interfaces. Each provides hook methods that Nox calls at specific moments.
+
+### Base: `IModInitializer`
+
+All initializers inherit from this one. Every method has a default empty body — override only what you need.
+
+| Method | Called when |
+|---|---|
+| `OnInitialize(IModCoreAPI api)` | Mod is loaded (synchronous). |
+| `OnInitializeAsync(IModCoreAPI api)` | Mod is loaded (async). Use for I/O. |
+| `OnPostInitialize()` | All mods have finished `OnInitialize`. |
+| `OnPostInitializeAsync()` | All mods have finished `OnInitializeAsync`. |
+| `OnUpdate()` | Every frame. |
+| `OnLateUpdate()` | Every frame, after all `Update`. |
+| `OnFixedUpdate()` | Physics tick (fixed timestep). |
+| `OnPreDispose()` | Before the mod is unloaded (sync). |
+| `OnPreDisposeAsync()` | Before the mod is unloaded (async). |
+| `OnDispose()` | Cleanup — unregister listeners, null references. |
+| `OnDisposeAsync()` | Async cleanup. |
+
+### Context-specific initializers
+
+Each context adds its own lifecycle methods on top of the base. They all follow the same pattern — pick the one matching your target:
+
+<Accordions>
+  <Accordion title="IMainModInitializer (main)">
+    Runs always, in all contexts. Receives `IMainModCoreAPI`.
+
+    | Method | Equivalent to |
+    |---|---|
+    | `OnInitializeMain(IMainModCoreAPI api)` | `OnInitialize` but with main-scoped API |
+    | `OnPostInitializeMain()` | `OnPostInitialize` for main |
+    | `OnUpdateMain()` | `OnUpdate` for main |
+    | `OnDisposeMain()` | `OnDispose` for main |
+    | … | (same pattern for async/late/fixed variants) |
+  </Accordion>
+
+  <Accordion title="IClientModInitializer (client)">
+    Runs in Play mode. Receives `IClientModCoreAPI`.
+
+    | Method | Equivalent to |
+    |---|---|
+    | `OnInitializeClient(IClientModCoreAPI api)` | `OnInitialize` but with client-scoped API |
+    | `OnPostInitializeClient()` | `OnPostInitialize` for client |
+    | `OnUpdateClient()` | `OnUpdate` for client |
+    | `OnDisposeClient()` | `OnDispose` for client |
+    | … | (same pattern for async/late/fixed variants) |
+  </Accordion>
+
+  <Accordion title="IEditorModInitializer (editor)">
+    Runs inside Unity Editor. Receives `IEditorModCoreAPI`.
+
+    | Method | Equivalent to |
+    |---|---|
+    | `OnInitializeEditor(IEditorModCoreAPI api)` | `OnInitialize` but with editor-scoped API |
+    | `OnPostInitializeEditor()` | `OnPostInitialize` for editor |
+    | `OnUpdateEditor()` | `OnUpdate` for editor |
+    | `OnDisposeEditor()` | `OnDispose` for editor |
+    | … | (same pattern for async/late/fixed variants) |
+  </Accordion>
+</Accordions>
+
+<Callout type="info">
+    The base `IModInitializer` methods are **always** called, regardless of context.  
+    Context-specific methods are called **in addition** when running in that context.
+</Callout>
+
+---
+
+## The Core API (`IModCoreAPI`)
+
+Passed to `OnInitialize`, it's your gateway to the Nox runtime:
+
+```csharp
+public void OnInitialize(IModCoreAPI api) {
+    // Access other mods
+    var allMods = api.ModAPI.GetMods();
+
+    // Read/write persistent config
+    var config = api.ConfigAPI.GetConfig("my_key");
+
+    // Log messages
+    api.LoggerAPI.Log("Mod initialized!");
+
+    // Subscribe to events
+    api.EventAPI.Subscribe("user.login", OnUserLogin);
+
+    // Access assets from your Assets/ folder
+    var prefab = api.AssetAPI.Load<GameObject>("my_prefab");
+}
+```
+
+### Available APIs
+
+| Property | Type | Description |
+|---|---|---|
+| `ModMetadata` | `IModMetadata` | Your mod's metadata (id, version, authors). |
+| [`ModAPI`](/docs/guides/modding/modapi) | `IModAPI` | Query and interact with other loaded mods. |
+| [`EventAPI`](/docs/guides/modding/eventapi) | `IEventAPI` | Pub/sub event system for cross-mod communication. |
+| [`AssetAPI`](/docs/guides/modding/assetapi) | `IAssetAPI` | Load assets from your mod's `Assets/` folder. |
+| [`ConfigAPI`](/docs/guides/modding/configapi) | `IConfigAPI` | Persistent per-mod storage with dot-path access. |
+| [`LoggerAPI`](/docs/guides/modding/loggerapi) | `ILoggerAPI` | Structured logging with levels and Unity context. |
+| [`LibAPI`](/docs/guides/modding/libapi) | `ILibAPI` | Load native libraries (`.dll`, `.so`, `.dylib`). |
+
+<Callout type="info">
+    `IMainModCoreAPI`, `IClientModCoreAPI`, etc. are currently empty marker interfaces extending `IModCoreAPI`.  
+    They exist so context-specific APIs can be added in the future without breaking existing mods.
+</Callout>
+
+### Context-specific CoreAPIs
+
+Each context receives its own CoreAPI variant. Today they are empty extensions of `IModCoreAPI`, but they allow future context-specific additions:
+
+<Accordions>
+  <Accordion title="IMainModCoreAPI (main)">
+    Passed to `OnInitializeMain`. Extends `IModCoreAPI` — same properties as the base, reserved for main-specific APIs in the future.
+  </Accordion>
+
+  <Accordion title="IClientModCoreAPI (client)">
+    Passed to `OnInitializeClient`. Extends `IModCoreAPI` — reserved for client-specific APIs.
+  </Accordion>
+
+  <Accordion title="IEditorModCoreAPI (editor)">
+    Passed to `OnInitializeEditor`. Extends `IModCoreAPI` — reserved for editor-specific APIs.
+  </Accordion>
+</Accordions>
+
+---
+
+## Writing a Feature End-to-End
+
+Let's build a simple **Greeter** mod that says hello.
+
+<Steps>
+
+<Step>
+### Define the API (SDK layer)
+
+SDK contains only interfaces and enums — no logic:
+
+```csharp title="SDK/IGreeterAPI.cs"
+namespace My.Super.Mod {
+    public interface IGreeterAPI {
+        string SayHello(string name);
+    }
+}
+```
+
+</Step>
+
+<Step>
+### Simple implementation (CCK layer)
+
+CCK provides a simple, default implementation of the SDK interfaces:
+
+```csharp title="CCK/Greeter.cs"
+namespace My.Super.Mod.CCK {
+    public class Greeter : IGreeterAPI {
+        public string SayHello(string name) {
+            return $"Hello {name}, welcome to Nox!";
+        }
+    }
+}
+```
+
+</Step>
+
+<Step>
+### Mod logic (Runtime layer)
+
+Runtime contains the actual logic and the `Main` entry point. Here we implement the API, log on startup, and clean up:
+
+```csharp title="Runtime/Main.cs"
+using Nox.CCK.Mods.Cores;
+using Nox.CCK.Mods.Initializers;
+
+namespace My.Super.Mod.Runtime {
+    public class Main : IMainModInitializer, IGreeterAPI {
+        private IModCoreAPI coreAPI;
+        private Greeter greeter;
+
+        public void OnInitialize(IModCoreAPI api) {
+            coreAPI = api;
+            greeter = new Greeter();
+
+            coreAPI.LoggerAPI.Log("Greeter mod initialized!");
+        }
+
+        public void OnDispose() {
+            greeter = null;
+            coreAPI = null;
+        }
+
+        public string SayHello(string name) {
+            return greeter.SayHello(name);
+        }
+    }
+}
+```
+
+</Step>
+
+</Steps>
+
+---
+
+## Best Practices
+
+- **Always clean up in `OnDispose`**: unsubscribe from events, nullify static references, cancel pending async operations.
+- **SDK = interfaces/enums only**: no logic, no implementations.
+- **Use `[NoxPublic]`** to mark methods intended for public consumption (helps with documentation generation).
+- **Test in both Editor and build**: some APIs behave differently (e.g., file paths, `Application.*`).
+
+Continue to **[Building Your Mod](/docs/guides/modding/building)** to compile and package it.

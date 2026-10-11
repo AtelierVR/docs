@@ -1,0 +1,111 @@
+---
+title: Modding
+description: Extend Nox with custom mods using the SDK and CCK
+icon: puzzle-piece
+---
+import { getIcon } from "@/lib/source";
+
+# Getting Started
+
+<Cards>
+    <Card
+        icon={getIcon("play-circle")}
+        href="/docs/guides/modding/setup"
+        title="Setup"
+        description="Scaffold a new mod: nox.mod.json, asmdef, .gitignore, and folder structure."
+    />
+    <Card
+        icon={getIcon("code-bracket")}
+        href="/docs/guides/modding/features"
+        title="Implementing Features"
+        description="Use the initializer lifecycle and Core API to add features."
+    />
+    <Card
+        icon={getIcon("arrow-up-circle")}
+        href="/docs/guides/modding/building"
+        title="Building"
+        description="Compile and package your mod with the Mod Builder editor panel."
+    />
+    <Card
+        icon={getIcon("cloud-arrow-up")}
+        href="/docs/guides/modding/publishing"
+        title="Publishing"
+        description="Set up CI with GitHub Actions to build and release automatically."
+    />
+</Cards>
+
+# Core APIs
+
+<Cards>
+    <Card
+        icon={getIcon("cube")}
+        href="/docs/guides/modding/modapi"
+        title="Mod API"
+        description="Query, load, unload, and reload mods at runtime."
+    />
+    <Card
+        icon={getIcon("bolt")}
+        href="/docs/guides/modding/eventapi"
+        title="Event API"
+        description="Publish/subscribe event bus for cross-mod communication."
+    />
+    <Card
+        icon={getIcon("folder")}
+        href="/docs/guides/modding/assetapi"
+        title="Asset API"
+        description="Load Unity assets and scenes from your mod's Assets/ folder."
+    />
+    <Card
+        icon={getIcon("bookmark")}
+        href="/docs/guides/modding/configapi"
+        title="Config API"
+        description="Persistent per-mod configuration storage with dot-path access."
+    />
+    <Card
+        icon={getIcon("cog")}
+        href="/docs/guides/modding/libapi"
+        title="Lib API"
+        description="Load and manage native libraries (.dll, .so, .dylib)."
+    />
+    <Card
+        icon={getIcon("document-text")}
+        href="/docs/guides/modding/loggerapi"
+        title="Logger API"
+        description="Structured logging with levels, tags, and Unity context."
+    />
+</Cards>
+
+# Feature APIs
+
+<Cards>
+    <Card
+        icon={getIcon("server-stack")}
+        href="/docs/guides/modding/control"
+        title="Control Protocol"
+        description="External control via WebSocket, MCP, and HTTP REST. Register operators from your mod."
+    />
+    <Card
+        icon={getIcon("adjustments-horizontal")}
+        href="/docs/guides/modding/settings"
+        title="Settings"
+        description="Add toggle, range, button, or dropdown handlers. Persisted config with in-game UI."
+    />
+    <Card
+        icon={getIcon("command-line")}
+        href="/docs/guides/modding/terminal"
+        title="Terminal"
+        description="Register custom commands. ArgParser, environments, and command chaining."
+    />
+    <Card
+        icon={getIcon("speaker-wave")}
+        href="/docs/guides/modding/audio"
+        title="Audio"
+        description="Volume channels with dependency hierarchies. Microphone DSP and voice pipeline."
+    />
+    <Card
+        icon={getIcon("key")}
+        href="/docs/guides/modding/keybinding"
+        title="Keybinding"
+        description="Input bindings with typed callbacks. Keyboard, gamepad, XR controllers."
+    />
+</Cards>

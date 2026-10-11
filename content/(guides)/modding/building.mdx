@@ -1,0 +1,81 @@
+---
+title: Building
+description: Build your mod with the Mod Builder editor panel.
+---
+
+The **Mod Builder** compiles your mod into an [AssetBundle](https://docs.unity3d.com/6000.2/Documentation/Manual/AssetBundlesIntro.html) ready for distribution.
+
+## Open the Builder
+
+Navigate to the top menu: **Nox** → **Mods** → **Open Builder**.
+
+![](/img/mod-builder/open.png)
+
+The window shows:
+
+- **Mod ID** — Matches `id` from `nox.mod.json`.
+- **Version** — Read from `nox.mod.json`. Use `x` wildcards for CI auto-bump (e.g., `1.0.x`).
+- **Status** — Warnings and errors about your mod's state.
+- **Platform** — Target platform for the build.
+- **Output** — Where the `.zip` package will be saved.
+
+## Status Panel
+
+| Icon | Meaning |
+|---|---|
+| ✅ Green | Everything is valid. |
+| ⚠️ Yellow | Warning — build may succeed but with caveats. |
+| ❌ Red | Error — build will fail. Must be fixed. |
+
+### Common warnings
+
+| Warning | Fix |
+|---|---|
+| **No User** | Log in with your Nox account. Required for publishing. |
+| **Platform Mismatch** | Selected platform differs from the active Unity platform. Switch or use `Use Active Platform`. |
+
+### Common errors
+
+| Error | Fix |
+|---|---|
+| **Missing entry point** | Ensure `entrypoints` in `nox.mod.json` points to an existing class. |
+| **Missing `nox.mod.json`** | The file must exist at the root of your mod folder. |
+| **Unsupported Platform** | Install the platform module via Unity Hub. |
+
+## Platform Selection
+
+Select the target platform from the dropdown:
+
+- **Windows** — `.exe` builds.
+- **Linux** — Standalone Linux builds.
+- **Android** — Oculus Quest / mobile.
+- **None** — Uses the currently active Unity platform.
+
+<Callout type="info">
+    CI builds typically target **Windows** and **Linux**.  
+    The `None` option is useful for local testing.
+</Callout>
+
+## Output Folder
+
+Click **Browse** to choose where the built package will be saved.
+
+The builder produces a `.zip` file named `{mod_id}-{version}.zip`, containing the compiled AssetBundle and metadata.
+
+## Build
+
+1. Fix all errors in the status panel.
+2. Select your target platform.
+3. Choose an output folder.
+4. Click **Build**.
+
+The build process:
+1. Compiles all `.asmdef` assemblies.
+2. Packs `Assets/` into an AssetBundle.
+3. Bundles the manifest (`nox.mod.json`, `package.json`).
+4. Creates the `.zip` archive.
+
+<Callout type="warn">
+    Building for multiple platforms requires running the builder once per platform.  
+    CI automates this — see the **[Publishing guide](/docs/guides/modding/publishing)**.
+</Callout>

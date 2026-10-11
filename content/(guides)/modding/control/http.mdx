@@ -1,0 +1,144 @@
+---
+title: HTTP REST API
+description: Simple HTTP endpoints for scripting and debugging
+---
+
+The HTTP REST API runs on port `8001`. No WebSocket handshake, no permission system —
+just HTTP requests. All operators are callable as long as the token (if configured) is valid.
+
+## Authentication
+
+When `settings.control.token` is set (auto-generated on first run — 32 random bytes,
+Base64-encoded), all `POST` endpoints require `Authorization: Bearer <token>`.
+`GET` endpoints are public.
+
+## CORS
+
+All responses include:
+- `Access-Control-Allow-Origin: *`
+- `Access-Control-Allow-Methods: GET, POST, OPTIONS`
+- `Access-Control-Allow-Headers: Content-Type`
+
+`OPTIONS` requests return `204 No Content`.
+
+## Endpoints
+
+### `GET /api/tools`
+
+Lists all registered operators with their JSON Schema, same format as MCP `tools/list`.
+
+```bash
+curl http://localhost:8001/api/tools
+```
+
+Response:
+
+```json
+{
+  "tools": [
+    {
+      "name": "config_get",
+      "description": "Read a configuration value.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string", "description": "The configuration key" }
+        },
+        "required": ["key"]
+      }
+    }
+  ]
+}
+```
+
+### `GET /api/operations`
+
+Operator names only — a flat `JArray` of strings.
+
+```bash
+curl http://localhost:8001/api/operations
+```
+
+Response: `["config_get", "config_set", "hierarchy_list", "mods_list", ...]`
+
+### `POST /api/call/{name}`
+
+Calls an operator by name. Pass arguments as JSON body. Requires auth if token is
+configured (returns `401` with `{"error": "Unauthorized"}` otherwise).
+
+```bash
+# Read a config value
+curl -X POST http://localhost:8001/api/call/config_get \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"key": "settings.control.port"}'
+
+# Response (from OperatorOutput.Ok):
+# { "ok": true, "value": 8000 }
+```
+
+```bash
+# Set a config value
+curl -X POST http://localhost:8001/api/call/config_set \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"key": "test.value", "value": "hello"}'
+
+# Response: { "ok": true, "value": { "key": "test.value", "value": "hello" } }
+```
+
+```bash
+# Operator with no arguments
+curl -X POST http://localhost:8001/api/call/mods_list \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{}'
+```
+
+### `POST /mcp`
+
+Full JSON-RPC 2.0 endpoint — same as calling the MCP dispatcher directly. Requires auth.
+
+```bash
+curl -X POST http://localhost:8001/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+See [MCP Integration](/docs/guides/modding/control/mcp) for the full method reference.
+
+### `GET /api`
+
+API metadata — service name, version, available endpoints.
+
+```bash
+curl http://localhost:8001/api
+```
+
+Response:
+
+```json
+{
+  "service": "Nox.Control HTTP API",
+  "version": "1.0",
+  "operations": 12,
+  "endpoints": [
+    "GET  /api/tools",
+    "GET  /api/operations",
+    "POST /api/call/{name}",
+    "POST /mcp"
+  ]
+}
+```
+
+## Finding the Token
+
+The token is auto-generated in config. Read it from the REST API itself:
+
+```bash
+curl -X POST http://localhost:8001/api/call/config_get \
+  -H "Content-Type: application/json" \
+  -d '{"key": "settings.control.token"}'
+```
+
+Or from the config file directly at `settings.control.token`.

@@ -1,0 +1,84 @@
+---
+title: Creating a Channel
+description: Register audio channels with dependency hierarchies
+---
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+<Steps>
+  <Step>
+    ### Edit `nox.mod.json`
+
+    ```json
+    {
+      "type": "mod",
+      "id": "my.mod",
+      "version": "1.0.0",
+      "relations": [
+        {
+          "id": "audio",
+          "type": "depends",
+          "version": ">=1.0.0",
+          "register": "git+https://github.com/AtelierVR/nox.audio.git"
+        }
+      ],
+      "constraints": [
+        { "type": "after", "id": "audio" }
+      ]
+    }
+    ```
+  </Step>
+  <Step>
+    ### Create the `.asmdef`
+
+    ```json
+    {
+      "name": "My.Mod",
+      "references": [
+        "Nox.Audio",
+        "Nox.CCK.Audio"
+      ]
+    }
+    ```
+  </Step>
+  <Step>
+    ### Register with ChannelRegister
+
+    ```csharp
+    using Nox.Audio;
+    using Nox.CCK.Audio;
+
+    public class Main : IMainModInitializer {
+        private ChannelRegister _channel;
+
+        public void OnInitializeMain(IMainModCoreAPI api) {
+            Instance = this;
+            CoreAPI = api;
+            _channel = new ChannelRegister("my-mod", new[] { "general" }, api);
+            _channel.OnVolume.AddListener(vol => { });
+        }
+
+        public void OnDisposeMain() {
+            _channel?.Dispose();
+            Instance = null;
+            CoreAPI = null;
+        }
+    }
+    ```
+
+    `ChannelRegister` auto-registers, blocks removal via veto, and unregisters on dispose.
+  </Step>
+</Steps>
+
+## IChannelAudio
+
+```csharp
+public interface IChannelAudio
+{
+    string Id { get; }
+    string[] Depends { get; }
+    float Volume { get; set; }        // [0, 1]
+    bool IsMuted { get; set; }
+    bool IsEffectivelyMuted { get; }  // true if self or parent muted
+    float EffectiveVolume { get; }    // min(self, all parents)
+}
+```

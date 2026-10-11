@@ -1,0 +1,92 @@
+---
+title: Overview
+description: Volume channels, microphone DSP, and voice pipeline
+---
+import { getIcon } from "@/lib/source";
+
+The **nox.audio** module provides audio infrastructure: volume channels with
+dependency hierarchies, microphone management with real-time DSP, and the
+voice pipeline for networked players.
+
+<Cards>
+    <Card
+        icon={getIcon("plus-circle")}
+        href="/docs/guides/modding/audio/create-channel"
+        title="Creating a Channel"
+        description="Register audio channels with dependency hierarchies."
+    />
+</Cards>
+
+## Channels
+
+Channels form a dependency tree where parent mute/volume cascades to children:
+
+```csharp
+var audioAPI = api.ModAPI.GetMod("audio")?.GetInstance<IAudioAPI>();
+
+// Root channel — no dependencies
+var general = audioAPI.Register("general");
+
+// Child channels depending on "general"
+var voice = audioAPI.Register("voice", new[] { "general" });
+var world = audioAPI.Register("world", new[] { "general" });
+var sfx   = audioAPI.Register("sfx",   new[] { "general" });
+
+// Effects cascade down
+general.Volume = 0.5f;
+voice.EffectiveVolume;   // 0.5 — min(self, parent)
+world.EffectiveVolume;   // 0.5
+
+general.IsMuted = true;
+voice.IsEffectivelyMuted;  // true
+sfx.IsEffectivelyMuted;    // true
+
+// Persisted automatically in config
+```
+
+Use `ChannelRegister` (from `Nox.CCK.Audio`) for production code — it protects
+your channel from being removed by other mods via the veto system.
+
+## Microphone
+
+```csharp
+var micAPI = api.ModAPI.GetMod("audio")?.GetInstance<IMicrophoneAPI>();
+
+// Current device
+var mic = micAPI.Current;
+mic.Start("my-mod");          // ref-counted
+var loudness = mic.Loudness;  // RMS × 10, clamped [0, 1]
+mic.Stop("my-mod");
+
+// Enumerate all devices
+foreach (var device in micAPI.All)
+    Debug.Log($"{device.Name}: {device.Frequencies}");
+
+// Per-device settings (persisted in config):
+mic.Volume = 1.5f;           // [0, 2]
+mic.IsMuted = false;
+mic.NoiseSuppression = 0.6f; // [0, 1]
+```
+
+DSP pipeline applied in order: **mute** → **volume** → **noise suppression** → **activation gate**.
+
+## Voice Pipeline
+
+```csharp
+// Per-player voice state
+var voice = playerVoice;
+voice.Speak = SpeakMode.Normal;   // Muted, Whisper, Normal, Loud, Broadcast
+voice.Volume = 1.5f;              // [0, 2], persisted per-player
+voice.IsMuted = false;
+voice.EffectiveVolume;            // clamped by channel hierarchy
+```
+
+## Events
+
+| Event | Payload |
+|-------|---------|
+| `audio.channel.volume_changed` | `(channel, volume, effectiveVolume)` |
+| `audio.channel.mute_changed` | `(channel, isMuted, isEffectivelyMuted)` |
+| `audio.channel.remove_requested` | `(channel, callback)` — vetoable |
+| `audio.microphone.added` | `Microphone` |
+| `audio.microphone.current_changed` | `(newMic, oldMic)` |

@@ -1,0 +1,115 @@
+---
+title: Creating a Handler
+description: Add custom settings handlers to your mod
+---
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+<Steps>
+  <Step>
+    ### Edit `nox.mod.json`
+
+    ```json
+    {
+      "type": "mod",
+      "id": "my.mod",
+      "version": "1.0.0",
+      "relations": [
+        {
+          "id": "settings",
+          "type": "depends",
+          "version": ">=1.0.0",
+          "register": "git+https://github.com/AtelierVR/nox.settings.git"
+        }
+      ],
+      "constraints": [
+        { "type": "after", "id": "settings" }
+      ]
+    }
+    ```
+  </Step>
+  <Step>
+    ### Create the `.asmdef`
+
+    ```json
+    {
+      "name": "My.Mod",
+      "references": [
+        "Nox.Settings",
+        "Nox.CCK.Settings"
+      ]
+    }
+    ```
+  </Step>
+  <Step>
+    ### Implement (Button example)
+
+    ```csharp
+    public class MyButton : ButtonHandler {
+        public MyButton() {
+            SetLabel("settings.entry.my_mod.general.log.label");
+            SetButtonText("settings.entry.my_mod.general.log.action");
+        }
+
+        public override string[] GetPath()
+            => new[] { "my-mod", "general", "log" };
+
+        protected override GameObject GetPrefab()
+            => Main.CoreAPI.AssetAPI.GetAsset<GameObject>(
+                "settings:prefabs/button.prefab");
+
+        public override void OnClick(IContext context)
+            => Logger.Log("Button clicked!");
+    }
+    ```
+  </Step>
+  <Step>
+    ### Register
+
+    ```csharp
+    public class Main : IMainModInitializer {
+        public static Main Instance;
+        public IMainModCoreAPI CoreAPI;
+
+        public static ISettingAPI SettingAPI =>
+            Instance.CoreAPI.ModAPI
+                .GetMod("settings")
+                ?.GetInstance<ISettingAPI>();
+
+        private MyButton _button;
+
+        public void OnInitializeMain(IMainModCoreAPI api) {
+            Instance = this;
+            CoreAPI = api;
+            _button = new MyButton();
+            SettingAPI?.Add(_button);
+        }
+
+        public void OnDisposeMain() {
+            SettingAPI?.Remove(_button.GetPath());
+            Instance = null;
+            CoreAPI = null;
+        }
+    }
+    ```
+  </Step>
+  <Step>
+    ### Advanced Patterns
+
+    **Path structure** — `["category", "group", "entry"]`. Category maps to icon (`category.png` in `Assets/settings/icons/`).
+
+    **Conditional visibility**:
+    ```csharp
+    public override bool IsActive() => condition;
+    ```
+
+    **React to changes**:
+    ```csharp
+    public override void OnUpdated(IHandler h) { }
+    ```
+
+    **Custom prefab**:
+    ```csharp
+    public override GameObject GetContent(RectTransform t, IMenu m) { }
+    ```
+  </Step>
+</Steps>

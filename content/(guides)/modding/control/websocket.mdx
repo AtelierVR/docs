@@ -1,0 +1,225 @@
+---
+title: WebSocket Protocol
+description: Connect and interact with the WebSocket server
+---
+
+The WebSocket transport uses a JSON event envelope: `{ "event": "...", "args": [...] }`.
+Connect to `ws://localhost:8000`, then send a `hello` handshake as your **first message**.
+Any message before `hello` closes the socket.
+
+## Handshake
+
+The client sends a `hello` event. The `id` field is **required** and acts as the
+unique client identifier. The `version` must match the server's protocol version (`1`).
+
+**New client** (no existing entry):
+
+```json
+// Client → Server
+{
+  "event": "hello",
+  "args": [{
+    "id": "my-tool",
+    "name": "My Tool",
+    "description": "External control client for my-tool",
+    "version": 1,
+    "permissions": ["config:read", "hierarchy:read"]
+  }]
+}
+
+// Server → Client (token included for first-time clients)
+{
+  "event": "hello",
+  "args": [{
+    "ok": true,
+    "protocol_version": 1,
+    "token": "abc123..."
+  }]
+}
+```
+
+**Returning client** (has a `RegisteredEntry` from a previous session):
+
+```json
+// Client → Server (must include the saved token)
+{
+  "event": "hello",
+  "args": [{
+    "id": "my-tool",
+    "version": 1,
+    "token": "abc123..."
+  }]
+}
+
+// Server → Client (no token — already known)
+{
+  "event": "hello",
+  "args": [{ "ok": true, "protocol_version": 1 }]
+}
+```
+
+**Rejection** — the socket is closed after this message:
+
+```json
+// Server → Client
+{
+  "event": "hello:reject",
+  "args": [{
+    "reason": "Invalid or missing token for existing client.",
+    "protocol_version": 1
+  }]
+}
+```
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `id` | **Yes** | `string` | Unique client identifier |
+| `version` | **Yes** | `int` | Protocol version — must be `1` |
+| `name` | No | `string \| object` | Display name (`"My Tool"` or `{"en-US":"My Tool"}`) |
+| `description` | No | `string \| object` | Description (string or localized object) |
+| `token` | No* | `string` | Mandatory for returning clients with existing `RegisteredEntry` |
+| `permissions` | No | `string[]` | Permissions this client may request later |
+
+<Callout type="info">
+  `name` and `description` support localization via `{"en-US": "...", "fr-FR": "..."}`.
+  If omitted, a fallback is generated from the endpoint address.
+</Callout>
+
+## Requesting Permissions
+
+After handshake, request the permissions you declared. Only permissions that were in the
+`hello`'s `permissions` array or already granted are accepted. Newly declared permissions
+are **auto-granted** and fire a `PermissionEvents.OnPermissionRequest` event on the server.
+
+```json
+// Client → Server
+{ "event": "permission:request", "args": [["config:read", "hierarchy:read"]] }
+
+// Server → Client
+{
+  "event": "permission:response",
+  "args": [{
+    "allowed": ["config:read"],
+    "rejected": [
+      { "id": "hierarchy:read", "reason": "Not declared at hello time." }
+    ]
+  }]
+}
+```
+
+## Listing Permissions
+
+```json
+// Client → Server
+{ "event": "permission:list", "args": [] }
+
+// Server → Client
+{
+  "event": "permission:list",
+  "args": [{
+    "allowed": ["config:read"],
+    "pending": ["hierarchy:write"],
+    "rejected": [{ "id": "logger:read", "reason": "Denied." }]
+  }]
+}
+```
+
+- `allowed` — `PermissionState.Granted`, usable immediately
+- `pending` — `PermissionState.Declared`, declared but not yet granted/denied
+- `rejected` — `PermissionState.Denied`, explicitly denied (e.g. via admin)
+
+## Calling Operators
+
+Any registered `IOperator` can be called by using its **name** as the event.
+Arguments are passed in `args[0]`.
+
+```json
+// Client → Server
+{ "event": "config_get", "args": [{ "key": "settings.control.port" }] }
+
+// Server → Client
+{ "event": "config_get", "args": [{ "ok": true, "value": 8000 }] }
+```
+
+If you lack a required permission, the server blocks the call and responds:
+
+```json
+// Server → Client
+{
+  "event": "permission:required",
+  "args": [{
+    "event": "config_set",
+    "require": ["config:write"]
+  }]
+}
+```
+
+## Full JavaScript Example
+
+```javascript
+const ws = new WebSocket("ws://localhost:8000");
+let token = localStorage.getItem("nox_token");
+
+ws.onopen = () => {
+    ws.send(JSON.stringify({
+        event: "hello",
+        args: [{
+            id: "my-tool",
+            name: "My Tool",
+            description: "Custom control client",
+            version: 1,
+            token: token || undefined,
+            permissions: ["config:read", "mods:read"]
+        }]
+    }));
+};
+
+ws.onmessage = (msg) => {
+    const { event, args } = JSON.parse(msg.data);
+    const payload = args?.[0] ?? {};
+
+    if (event === "hello") {
+        // New client: store the issued token
+        if (payload.token)
+            localStorage.setItem("nox_token", payload.token);
+        // Request the permissions we declared
+        ws.send(JSON.stringify({
+            event: "permission:request",
+            args: [["config:read"]]
+        }));
+    }
+    else if (event === "hello:reject") {
+        console.error("Handshake rejected:", payload.reason);
+        ws.close();
+    }
+    else if (event === "permission:response") {
+        console.log("Allowed:", payload.allowed,
+                    "Rejected:", payload.rejected);
+        // Now call an operator
+        ws.send(JSON.stringify({ event: "mods_list", args: [{}] }));
+    }
+    else if (event === "permission:required") {
+        console.log("Need:", payload.require, "for", payload.event);
+    }
+    else {
+        console.log(event, payload);
+    }
+};
+
+ws.onclose = () => console.log("Disconnected");
+```
+
+## Events Reference
+
+| Event | Direction | Args shape | Description |
+|-------|-----------|------------|-------------|
+| `hello` | Client → Server | `[{ id, version, name?, description?, token?, permissions? }]` | Handshake — must be the first message |
+| `hello` | Server → Client | `[{ ok: true, protocol_version, token? }]` | Handshake ack — `token` only for new clients |
+| `hello:reject` | Server → Client | `[{ reason, protocol_version }]` | Handshake rejected, then socket closes |
+| `permission:request` | Client → Server | `[["p1", "p2"]]` | Request specific permissions (declared at hello) |
+| `permission:response` | Server → Client | `[{ allowed: [...], rejected: [{id, reason}] }]` | Result of a permission request |
+| `permission:list` | Client → Server | `[]` | Query current permission state |
+| `permission:list` | Server → Client | `[{ allowed, pending, rejected }]` | Full permission state for this client |
+| `permission:required` | Server → Client | `[{ event, require }]` | Missing permission — call blocked |
+| `{operator}` | Client → Server | `[{ ...args }]` | Call a registered operator by name |
+| `{operator}` | Server → Client | `[{ ok, value }]` or `[{ ok, error }]` | Operator result |

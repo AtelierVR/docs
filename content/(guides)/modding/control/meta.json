@@ -1,0 +1,11 @@
+{
+    "title": "Control Protocol",
+    "icon": "server-stack",
+    "pages": [
+        "index",
+        "websocket",
+        "mcp",
+        "http",
+        "create-operator"
+    ]
+}
