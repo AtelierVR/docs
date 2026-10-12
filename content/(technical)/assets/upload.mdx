@@ -90,6 +90,7 @@ curl -X POST "$NOX/$EP/42/releases/7/files" \
 
 ```json
 {
+  "id": 101,
   "name": "my-mod-windows.zip",
   "url": "https://example.com/api/mods/42/releases/7/files/101",
   "status": { "status": "awaiting" },
@@ -97,7 +98,7 @@ curl -X POST "$NOX/$EP/42/releases/7/files" \
 }
 ```
 
-The numeric id at the end of `url` is the `fileId`. `name` and `mime` are optional — they can come
+`id` is the `fileId`. `name` and `mime` are optional — they can come
 from the upload headers instead. Repeat this step **once per variant** (windows, linux…).
 </Step>
 
@@ -133,6 +134,7 @@ bytes are stored — the analysis happens afterwards:
 
 ```json
 {
+  "id": 101,
   "name": "my-mod-windows.zip",
   "url": "https://example.com/api/mods/42/releases/7/files/101",
   "status": { "status": "queued", "progress": null, "message": "Waiting for the bundle analysis" },
@@ -164,6 +166,9 @@ until [ -z "$(curl -sS "$NOX/$EP/42/releases/7/files/101/status" \
 done
 ```
 
+The status route takes the file **name** or its numeric **id**, so it can be polled with whichever
+one you kept around (`…/files/my-mod-windows.zip/status` works too).
+
 While it runs, `status.status` is `processing` and `progress` advances **live**: it is either the
 steps counted by the analyzer (`{ current, total }`) or `null` while they cannot be estimated —
 enough to drive a progress bar.
@@ -177,17 +182,19 @@ enough to drive a progress bar.
 
 ```jsonc
 // GET …/files/101/status — while the analysis runs
-{ "status": { "status": "processing", "progress": { "current": 45, "total": 227 }, "message": "Scanning 227 objects" } }
+{ "id": 101, "status": { "status": "processing", "progress": { "current": 45, "total": 227 }, "message": "Scanning 227 objects" } }
 ```
 
 Once `refetch_at` is gone the file is stable: `status` collapses to the plain string `"completed"`
 and `url` has switched to the download URL.
 
-```json
+```jsonc
 {
+  "id": 101,
   "name": "my-mod-windows.zip",
   "url": "https://example.com/api/files/<key>",
   "status": "completed",
+  // the shape of `analysis` depends on the analyzer of the file type
   "analysis": { "engine": "unity", "platform": "windows", "descriptors": 1 }
 }
 ```

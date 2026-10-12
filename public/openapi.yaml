@@ -10061,6 +10061,31 @@ paths:
       responses:
         '200':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileListDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       tags:
         - avatar
   /api/avatars/{id}/releases/{version}/files/{name}:
@@ -10142,6 +10167,31 @@ paths:
       responses:
         '201':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       security:
         - bearer: []
       summary: Init file upload
@@ -10177,16 +10227,42 @@ paths:
       responses:
         '200':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       security:
         - bearer: []
       summary: Upload file bytes
       tags:
         - avatar
-  /api/avatars/{id}/releases/{releaseId}/files/{fileId}/status:
+  /api/avatars/{id}/releases/{releaseId}/files/{fileRef}/status:
     get:
       description: >-
-        Return a file slot status (IApiFile) without streaming its bytes. Poll
-        it while `refetch_at` is not null.
+        Return a file slot status (IApiFile) without streaming its bytes.
+        `fileRef` is the file name or its numeric id. Poll it while `refetch_at`
+        is not null.
       operationId: AvatarsController_getUploadFileStatus
       parameters:
         - name: id
@@ -10199,7 +10275,7 @@ paths:
           in: path
           schema:
             type: string
-        - name: fileId
+        - name: fileRef
           required: true
           in: path
           schema:
@@ -10207,6 +10283,31 @@ paths:
       responses:
         '200':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       security:
         - bearer: []
       summary: Get file status
@@ -10588,6 +10689,31 @@ paths:
       responses:
         '200':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileListDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       tags:
         - mod
   /api/mods/{id}/releases/{version}/files/{name}:
@@ -10669,6 +10795,31 @@ paths:
       responses:
         '201':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       security:
         - bearer: []
       summary: Init file upload
@@ -10704,16 +10855,42 @@ paths:
       responses:
         '200':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       security:
         - bearer: []
       summary: Upload file bytes
       tags:
         - mod
-  /api/mods/{id}/releases/{releaseId}/files/{fileId}/status:
+  /api/mods/{id}/releases/{releaseId}/files/{fileRef}/status:
     get:
       description: >-
-        Return a file slot status (IApiFile) without streaming its bytes. Poll
-        it while `refetch_at` is not null.
+        Return a file slot status (IApiFile) without streaming its bytes.
+        `fileRef` is the file name or its numeric id. Poll it while `refetch_at`
+        is not null.
       operationId: ModsController_getUploadFileStatus
       parameters:
         - name: id
@@ -10726,7 +10903,7 @@ paths:
           in: path
           schema:
             type: string
-        - name: fileId
+        - name: fileRef
           required: true
           in: path
           schema:
@@ -10734,6 +10911,31 @@ paths:
       responses:
         '200':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       security:
         - bearer: []
       summary: Get file status
@@ -11114,6 +11316,31 @@ paths:
       responses:
         '200':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileListDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       tags:
         - world
   /api/worlds/{id}/releases/{version}/files/{name}:
@@ -11195,6 +11422,31 @@ paths:
       responses:
         '201':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       security:
         - bearer: []
       summary: Init file upload
@@ -11230,16 +11482,42 @@ paths:
       responses:
         '200':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       security:
         - bearer: []
       summary: Upload file bytes
       tags:
         - world
-  /api/worlds/{id}/releases/{releaseId}/files/{fileId}/status:
+  /api/worlds/{id}/releases/{releaseId}/files/{fileRef}/status:
     get:
       description: >-
-        Return a file slot status (IApiFile) without streaming its bytes. Poll
-        it while `refetch_at` is not null.
+        Return a file slot status (IApiFile) without streaming its bytes.
+        `fileRef` is the file name or its numeric id. Poll it while `refetch_at`
+        is not null.
       operationId: WorldsController_getUploadFileStatus
       parameters:
         - name: id
@@ -11252,7 +11530,7 @@ paths:
           in: path
           schema:
             type: string
-        - name: fileId
+        - name: fileRef
           required: true
           in: path
           schema:
@@ -11260,6 +11538,31 @@ paths:
       responses:
         '200':
           description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - error
+                  - time
+                  - request
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ApiFileDto'
+                    description: Response payload.
+                  error:
+                    type: 'null'
+                    example: null
+                    description: Always null for successful responses.
+                  time:
+                    type: integer
+                    example: 1680000000000
+                    description: Unix timestamp (ms) when the response was generated.
+                  request:
+                    type: string
+                    example: /api/endpoint
+                    description: Request path that produced this response.
       security:
         - bearer: []
       summary: Get file status
@@ -12391,8 +12694,8 @@ components:
         fingerprint:
           type: string
           description: >-
-            Device fingerprint (SHA-256 hex of the Ed25519 public key) if
-            provided during login, or null
+            Device fingerprint (SHA-256 hex of the login public key) if provided
+            during login, or null
           example: a1b2c3d4e5f6...
           nullable: true
         expires_at:
@@ -12515,7 +12818,7 @@ components:
           type: string
           example: null
           nullable: true
-          description: Ed25519 public key (base64 SPKI DER)
+          description: Public key (base64 SPKI DER), Ed25519 or RSA
       required:
         - username
         - display
@@ -12542,7 +12845,7 @@ components:
           type: string
           example: null
           nullable: true
-          description: Ed25519 public key (base64 SPKI DER)
+          description: Public key (base64 SPKI DER), Ed25519 or RSA
       required:
         - identifier
         - password
@@ -12737,8 +13040,8 @@ components:
           example: null
           nullable: true
           description: >-
-            Ed25519 public key (base64 SPKI DER) binding the session to a device
-            key
+            Public key (base64 SPKI DER, Ed25519 or RSA) binding the session to
+            a device key
       required:
         - ceremony_id
         - response
@@ -14308,6 +14611,217 @@ components:
         - limit
         - offset
         - total
+    ApiProxifiedUrlDto:
+      type: object
+      properties:
+        proxified:
+          type: string
+          description: URL served by this instance (proxified).
+          example: https://example.com/api/mods/42/releases/7/files/101
+        original:
+          type: string
+          description: Original URL, before proxification (provider storage or host).
+          example: https://github.com/…/releases/download/v1.0.0/my-mod.zip
+      required:
+        - proxified
+        - original
+    ApiFileStatusProgressDto:
+      type: object
+      properties:
+        current:
+          type: number
+          description: Steps already processed.
+          example: 45
+        total:
+          type: number
+          description: Steps to process in total.
+          example: 227
+      required:
+        - current
+        - total
+    ApiFileStatusDto:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Lifecycle status of the file.
+          enum:
+            - awaiting
+            - queued
+            - processing
+            - completed
+            - failed
+          example: processing
+        progress:
+          nullable: true
+          description: >-
+            Steps of the current run, or null while they cannot be estimated
+            (nothing counted yet, or the provider reports no steps).
+          allOf:
+            - $ref: '#/components/schemas/ApiFileStatusProgressDto'
+        message:
+          type: string
+          nullable: true
+          description: Human-readable detail about the current step, or null.
+          example: Scanning 227 objects
+      required:
+        - status
+    ApiFileDto:
+      type: object
+      properties:
+        id:
+          type: number
+          description: >-
+            Numeric file id — the last segment of the upload/download URL. The
+            status route accepts it, or the file name instead.
+          example: 101
+        name:
+          type: string
+          nullable: true
+          description: File name, or null when the slot is unnamed.
+          example: my-mod-windows.zip
+        url:
+          description: >-
+            Final download URL, or the temporary upload URL while the upload is
+            pending. `{ proxified, original }` when the response is expanded
+            with `?full=1`.
+          oneOf:
+            - type: string
+              example: https://…/files/101
+            - $ref: '#/components/schemas/ApiProxifiedUrlDto'
+        alias:
+          description: Aliases of the file (e.g. the `api` URL). Empty when none.
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiAliasDto'
+        size:
+          type: number
+          description: File size in bytes (0 until the bytes have been received).
+          example: 12345678
+        mime:
+          type: string
+          description: MIME type.
+          example: application/zip
+        hashs:
+          description: Content hashes (`algo:digest`); empty until computed.
+          example:
+            - sha256:…
+          type: array
+          items:
+            type: string
+        uploader:
+          description: NoxIdentifier string (or numeric id) of the uploader.
+          oneOf:
+            - type: string
+              example: 1@example.com
+            - type: integer
+              example: 1
+        status:
+          description: >-
+            Processing status: the shorthand status string, or the full status
+            object while the process has details to report.
+          oneOf:
+            - type: string
+              enum:
+                - awaiting
+                - queued
+                - processing
+                - completed
+                - failed
+              example: completed
+            - $ref: '#/components/schemas/ApiFileStatusDto'
+        attributes:
+          description: >-
+            Free-form attributes (e.g. `engine`, `platform`, `arch`); empty when
+            none.
+          example:
+            - key: platform
+              value: windows
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiAliasDto'
+        analysis:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: >-
+            Result of the type-specific analysis/validation, or null when there
+            is none. Its content depends on the analyzer of the file type
+            (engine, platform, validator metrics…), so it is deliberately not
+            fixed.
+        created_at:
+          type: number
+          description: Creation timestamp (epoch ms). Always set.
+          example: 1789340000000
+        updated_at:
+          type: number
+          description: Last update timestamp (epoch ms). Always set.
+          example: 1789340060000
+        signature:
+          type: string
+          nullable: true
+          description: Detached signature over the file hash (e.g. `ed25519:…`), or null.
+          example: ed25519:MEQCIG9X…
+        expires_at:
+          type: number
+          description: >-
+            Expiration timestamp (epoch ms) of a retryable resource: present
+            while an `awaiting` slot waits for its bytes, and on a `failed` file
+            (its retry window). Omitted for `queued`, `processing` and
+            `completed`.
+          example: 1789340000000
+        refetch_at:
+          type: number
+          description: >-
+            Epoch ms after which the client should GET the file again while it
+            is still changing. Omitted once the file is stable (completed or
+            failed) — like `expires_at`.
+          example: 1789340300000
+      required:
+        - id
+        - name
+        - url
+        - alias
+        - size
+        - mime
+        - hashs
+        - uploader
+        - status
+        - attributes
+        - created_at
+        - updated_at
+        - signature
+    ApiFileListDto:
+      type: object
+      properties:
+        query:
+          type: string
+          nullable: true
+          description: Echoed `?query=` filter (matches the file name or MIME), or null.
+          example: null
+        limit:
+          type: number
+          description: Page size (1–100).
+          example: 20
+        offset:
+          type: number
+          description: Page start index.
+          example: 0
+        total:
+          type: number
+          description: Full match count, ignoring pagination.
+          example: 3
+        items:
+          description: Page of matching files.
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiFileDto'
+      required:
+        - query
+        - limit
+        - offset
+        - total
+        - items
     CreateUploadAssetDto:
       type: object
       properties:

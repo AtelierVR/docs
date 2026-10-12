@@ -61,7 +61,7 @@ curl "$NOX/$EP/42/releases/v1.0.0/files?limit=20&offset=0"
   "offset": 0,
   "total": 3,
   "items": [
-    { "name": "my-mod-windows.zip", "url": "…", "mime": "application/zip", "size": 88941 }
+    { "id": 101, "name": "my-mod-windows.zip", "url": "…", "mime": "application/zip", "size": 88941 }
   ]
 }
 ```
@@ -88,8 +88,8 @@ curl -L "$NOX/$EP/42/releases/v1.0.0/files/my-mod-windows.zip" -o my-mod.zip
 ```
 
 This route **redirects** (`302`) to the storage URL — hence `-L`. `{version}` accepts the release
-id or name, and `{fileRef}` accepts the file **name** or its numeric **id** (the one at the end of
-the upload URL).
+id or name, and `{fileRef}` accepts the file **name** or its numeric **id** (the `id` field of
+every file object, also the last segment of the upload URL).
 
 <Callout type="info">
 The same URL is also exposed as `url` on every file object: it is the **download** URL once the
