@@ -9,6 +9,9 @@
     "dev": "npm run generate && next dev --turbo",
     "start": "next start",
     "types:check": "fumadocs-mdx && tsc --noEmit",
+    "ci": "npm run types:check",
+    "ci:docker": "docker build -t nox-docs:ci .",
+    "prepare": "git config core.hooksPath .githooks || true",
     "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
