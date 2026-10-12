@@ -41,8 +41,8 @@ curl "$NOX/$EP/42/releases/7"
 ```
 
 A release does **not** embed its files — a release may hold a huge number of them, so they are only
-served page by page (see below). While the release has no completed file it is `awaiting` and
-carries `expires_at` / `refetch_at`.
+served page by page (see below). The listing returns the **newest release first**. While the release
+has no completed file it is `awaiting` and carries `expires_at` / `refetch_at`.
 
 Only the **completed** releases are listed: a release that is still being uploaded (and an asset
 with no release at all) is hidden until it holds a completed file. Add `?status=awaiting` (or

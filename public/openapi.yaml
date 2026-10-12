@@ -13122,6 +13122,43 @@ components:
       required:
         - total
         - items
+    InstanceAssetDto:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Asset type, as used by the asset payloads
+          example: avatar
+        key:
+          type: string
+          description: >-
+            Nox identifier type letter of the asset (`a` for an avatar, `w` for
+            a world, `m` for a mod)
+          example: a
+        endpoint:
+          type: string
+          description: Route segment of the asset endpoints
+          example: avatars
+        rules:
+          type: object
+          description: >-
+            Upload rules enforced server-side on the files of this asset
+            (`required` attribute keys, `unique` attribute-key groups). `{}`
+            when the asset accepts anything: every uploaded file must declare
+            the required attributes, and cannot duplicate an existing file on a
+            unique group.
+          example:
+            required:
+              - platform
+              - engine
+            unique:
+              - - platform
+                - engine
+      required:
+        - type
+        - key
+        - endpoint
+        - rules
     InstanceConfigDto:
       type: object
       properties:
@@ -13185,6 +13222,13 @@ components:
             Whether the instance supports passkey (WebAuthn) registration and
             login
           example: true
+        assets:
+          description: >-
+            Asset kinds served by this instance, with the upload rules their
+            files are held to. A kind that declares no rule accepts anything.
+          type: array
+          items:
+            $ref: '#/components/schemas/InstanceAssetDto'
       required:
         - allowUserRegistration
         - allowInstanceCreation
@@ -13196,6 +13240,7 @@ components:
         - regions
         - allowedImageWidths
         - supportPasskey
+        - assets
     ApiActivityDto:
       type: object
       properties:

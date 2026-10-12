@@ -100,7 +100,12 @@ curl -X POST "$NOX/$EP/42/releases/7/files" \
 
 `id` is the `fileId`. `name` and `mime` are optional — they can come
 from the upload headers instead. Repeat this step **once per variant** (windows, linux…).
-</Step>
+<Callout type="info">
+A `mod`, an `avatar` or a `world` accepts **one file per `platform`+`engine` pair**, and requires
+both attributes: the server refuses a slot that omits them, or that would duplicate a pair already
+uploaded (`400`, naming the file that holds it). The rules per asset kind are published by
+`GET /configs` (`assets[].rules`, next to the `type`, `key` and `endpoint` of each kind).
+</Callout></Step>
 
 <Step>
 ### Send the bytes
